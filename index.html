@@ -1014,8 +1014,10 @@ async function ghPull(){
   if(!gist)return toast('Introduce el ID del Gist','err');
   setSt('busy','Descargando…');slog('Descargando desde GitHub…');
   try{
-    const res=await fetch(`https://api.github.com/gists/${gist}`,{
-      headers:{'Authorization':'Bearer '+tok,'Cache-Control':'no-cache'}
+    // Cache-Control header triggers CORS preflight → fails on mobile
+    // Use timestamp query param to bust cache instead
+    const res=await fetch(`https://api.github.com/gists/${gist}?t=${Date.now()}`,{
+      headers:{'Authorization':'Bearer '+tok}
     });
     if(!res.ok){
       const errText=await res.text();
@@ -1036,7 +1038,14 @@ async function ghPull(){
     setSt('ok','Sincronizado');
     slog(`✅ Descarga correcta. Año activo: ${DB.currentYear} · Alumnos: ${Y().students.length}`);
     toast(`Datos descargados ✓ — ${Y().students.length} alumnos cargados`,'ok');
-  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error al descargar: '+e.message,'err');}
+  }catch(e){
+    const msg=e.message==='Failed to fetch'
+      ?'Sin red o petición bloqueada. Comprueba conexión y que token/Gist sean correctos.'
+      :e.message;
+    setSt('err','Error');
+    slog('\u274C '+msg);
+    toast(msg,'err');
+  }
 }
 
 function loadGhConf(){
