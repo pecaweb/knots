@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NudosEF – Evaluación de Nudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+/* ──────────────────────────────────────────────
+   TOKENS
+────────────────────────────────────────────── */
+:root{
+  --fh:'Syne',sans-serif;
+  --fb:'Instrument Sans',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+  --bg0:#0e1210;--bg1:#161c18;--bg2:#1e2721;--bg3:#27322a;
+  --bo:#2e3d33;--bo2:#3a5040;
+  --t0:#e8ede9;--t1:#9db59f;--t2:#5e7a62;
+  --ac:#6aba7a;--ac2:#4d9e5e;--acb:rgba(106,186,122,.13);
+  --re:#e07070;--reb:rgba(224,112,112,.13);
+  --ye:#d4b85a;--yeb:rgba(212,184,90,.13);
+  --sh:0 4px 24px rgba(0,0,0,.5);
+  --r:10px;--rl:16px;--rs:6px;--tr:.18s ease;
+}
+[data-theme="light"]{
+  --bg0:#f4f6f2;--bg1:#fff;--bg2:#ecf0e9;--bg3:#dde5d9;
+  --bo:#c8d4c4;--bo2:#a8bfa4;
+  --t0:#1a2318;--t1:#4a6450;--t2:#7a9a80;
+  --ac:#2e7d44;--ac2:#1f6032;--acb:rgba(46,125,68,.1);
+  --re:#b83232;--reb:rgba(184,50,50,.1);
+  --ye:#8a6a10;--yeb:rgba(138,106,16,.1);
+  --sh:0 4px 24px rgba(0,0,0,.12);
+}
+
+/* ──────────────────────────────────────────────
+   RESET
+────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--fb);background:var(--bg0);color:var(--t0);min-height:100vh;overflow-x:hidden;transition:background var(--tr),color var(--tr)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--bo2);border-radius:3px}
+a{color:var(--ac);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select{font-family:var(--fb);cursor:pointer}
+input{cursor:text}
+
+/* ──────────────────────────────────────────────
+   LAYOUT
+────────────────────────────────────────────── */
+#app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+.topbar{
+  grid-row:1;display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;background:var(--bg1);border-bottom:1px solid var(--bo);
+  position:sticky;top:0;z-index:100;gap:10px;
+}
+.body-row{grid-row:2;display:flex;overflow:hidden}
+.sidebar{width:236px;min-width:236px;background:var(--bg1);border-right:1px solid var(--bo);display:flex;flex-direction:column;overflow-y:auto;padding:10px 0}
+.content{flex:1;overflow-y:auto;padding:22px}
+
+/* ──────────────────────────────────────────────
+   TOPBAR
+────────────────────────────────────────────── */
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--fh);font-size:19px;font-weight:800;color:var(--t0);letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
+.logo span{color:var(--ac)}
+.topbar-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.topbar-mid{flex:1;display:flex;justify-content:center;align-items:center}
+.sync-pill{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--bo);padding:4px 10px;border-radius:20px;font-size:12px;color:var(--t1);white-space:nowrap}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--t2);flex-shrink:0;transition:background .3s}
+.sdot.ok{background:var(--ac);box-shadow:0 0 6px var(--ac)}
+.sdot.err{background:var(--re)}
+.sdot.busy{background:var(--ye);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+select.ysel{background:var(--bg2);border:1px solid var(--bo);color:var(--t0);padding:5px 9px;border-radius:var(--rs);font-size:13px;font-weight:600;font-family:var(--fb);outline:none;transition:border-color var(--tr)}
+select.ysel:hover{border-color:var(--ac)}
+.ibtn{width:33px;height:33px;border-radius:var(--rs);border:1px solid var(--bo);background:var(--bg2);color:var(--t1);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--tr);flex-shrink:0}
+.ibtn:hover{border-color:var(--ac);color:var(--ac);background:var(--acb)}
+
+/* ──────────────────────────────────────────────
+   SIDEBAR
+────────────────────────────────────────────── */
+.nav-sec{padding:0 8px 4px}
+.nav-lbl{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--t2);padding:10px 8px 4px}
+.nvi{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border-radius:var(--rs);background:none;border:none;color:var(--t1);font-size:13.5px;font-weight:500;text-align:left;transition:all var(--tr)}
+.nvi:hover{background:var(--bg2);color:var(--t0)}
+.nvi.active{background:var(--acb);color:var(--ac);font-weight:600}
+.nvic{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.ndiv{height:1px;background:var(--bo);margin:7px 10px}
+
+/* ──────────────────────────────────────────────
+   BUTTONS
+────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);border:1px solid transparent;font-size:13px;font-weight:600;transition:all var(--tr);outline:none;white-space:nowrap;font-family:var(--fb)}
+.bp{background:var(--ac);color:#0e1210;border-color:var(--ac)}
+.bp:hover{background:var(--ac2);border-color:var(--ac2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(106,186,122,.4)}
+.bg{background:var(--bg2);color:var(--t0);border-color:var(--bo)}
+.bg:hover{border-color:var(--ac);color:var(--ac)}
+.bd{background:var(--reb);color:var(--re);border-color:var(--re)}
+.bd:hover{background:var(--re);color:#fff}
+.bsm{padding:4px 10px;font-size:12px}
+.bxs{padding:2px 7px;font-size:11px;border-radius:4px}
+
+/* ──────────────────────────────────────────────
+   CARDS
+────────────────────────────────────────────── */
+.card{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--rl);padding:18px;margin-bottom:16px;box-shadow:var(--sh)}
+.chd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.ct{font-family:var(--fh);font-size:17px;font-weight:700;letter-spacing:.3px}
+.stit{font-family:var(--fh);font-size:26px;font-weight:800;letter-spacing:.5px;margin-bottom:4px}
+.ssub{font-size:13px;color:var(--t1);margin-bottom:18px}
+
+/* ──────────────────────────────────────────────
+   FORM
+────────────────────────────────────────────── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.flbl{font-size:12px;font-weight:600;color:var(--t1);letter-spacing:.3px}
+.inp{background:var(--bg2);border:1px solid var(--bo);color:var(--t0);padding:8px 12px;border-radius:var(--rs);font-size:14px;outline:none;width:100%;transition:border-color var(--tr),box-shadow var(--tr)}
+.inp:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acb)}
+.inp::placeholder{color:var(--t2)}
+.isml{padding:5px 9px;font-size:13px}
+
+/* ──────────────────────────────────────────────
+   STATS
+────────────────────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:18px}
+.stat{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--r);padding:13px 16px}
+.stn{font-family:var(--fh);font-size:30px;font-weight:800;color:var(--ac);line-height:1}
+.stl{font-size:11.5px;color:var(--t1);margin-top:3px;font-weight:500}
+
+/* ──────────────────────────────────────────────
+   EXAM DATE BAR
+────────────────────────────────────────────── */
+.exbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 13px;background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);margin-bottom:16px}
+.exbar label{font-size:12px;font-weight:600;color:var(--t1);white-space:nowrap}
+
+/* ──────────────────────────────────────────────
+   TABLE
+────────────────────────────────────────────── */
+.twrap{overflow-x:auto;border:1px solid var(--bo);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--bg2)}
+th{padding:8px 10px;text-align:left;font-weight:600;color:var(--t1);border-bottom:1px solid var(--bo);white-space:nowrap;font-family:var(--fb);font-size:12px}
+th.kth{text-align:center;min-width:80px;vertical-align:bottom;padding:6px 4px}
+th.kth .khi{display:flex;flex-direction:column;align-items:center;gap:3px}
+th.kth .kn{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);height:68px;font-size:11px;font-weight:600;color:var(--t0);display:flex;align-items:center;padding:2px 0}
+th.kth .ktim{display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--bo);color:var(--t2);padding:1px 4px;border-radius:3px;font-size:10px;font-family:var(--fm)}
+th.sth{text-align:center;background:var(--acb);color:var(--ac);font-size:13px;min-width:68px}
+td{padding:8px 10px;border-bottom:1px solid var(--bo);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+td.snm{font-weight:600;font-size:13.5px;white-space:nowrap;min-width:138px}
+td.cct{text-align:center;padding:6px 4px}
+td.sct{text-align:center}
+.mall{margin-top:3px;padding:2px 5px;font-size:9px;font-weight:700;border-radius:3px;border:1px solid var(--bo);background:var(--bg1);color:var(--t2);transition:all var(--tr);display:block;width:100%}
+.mall:hover{border-color:var(--ac);color:var(--ac);background:var(--acb)}
+
+/* ──────────────────────────────────────────────
+   CHECKBOX
+────────────────────────────────────────────── */
+.ck{width:29px;height:29px;border-radius:7px;border:2px solid var(--bo);background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:0;transition:all var(--tr);outline:none;position:relative;overflow:hidden}
+.ck::after{content:'✓';font-size:15px;font-weight:800;color:var(--ac);opacity:0;transform:scale(.5);transition:all .15s}
+.ck:hover{border-color:var(--ac);background:var(--acb)}
+.ck:hover::after{opacity:.4;transform:scale(1)}
+.ck.yes{border-color:var(--ac);background:var(--acb)}
+.ck.yes::after{opacity:1;transform:scale(1)}
+
+/* ──────────────────────────────────────────────
+   SCORE BADGE
+────────────────────────────────────────────── */
+.sb{display:inline-block;padding:3px 9px;border-radius:20px;font-family:var(--fm);font-size:13px;font-weight:600}
+.sh{background:var(--acb);color:var(--ac)}
+.sm{background:var(--yeb);color:var(--ye)}
+.sl{background:var(--reb);color:var(--re)}
+
+/* ──────────────────────────────────────────────
+   LIST ITEMS
+────────────────────────────────────────────── */
+.li{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);border:1px solid var(--bo);background:var(--bg2);margin-bottom:6px;transition:border-color var(--tr)}
+.li:hover{border-color:var(--bo2)}
+.lin{width:23px;height:23px;border-radius:50%;background:var(--acb);color:var(--ac);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.lim{font-weight:600;font-size:13.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.limt{font-size:11px;color:var(--t2);white-space:nowrap;font-family:var(--fm)}
+.lia{display:flex;gap:5px;flex-shrink:0}
+
+/* ──────────────────────────────────────────────
+   MODAL
+────────────────────────────────────────────── */
+.mbg{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);align-items:center;justify-content:center}
+.mbg.open{display:flex}
+.mod{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--rl);padding:24px;width:90%;max-width:460px;box-shadow:var(--sh);animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(-6px)}to{opacity:1;transform:none}}
+.mtit{font-family:var(--fh);font-size:19px;font-weight:800;color:var(--ac);margin-bottom:16px}
+.mac{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* ──────────────────────────────────────────────
+   TABS
+────────────────────────────────────────────── */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--bo);margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:7px 14px;background:none;border:none;color:var(--t2);font-size:13px;font-weight:600;font-family:var(--fb);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--tr)}
+.tab:hover{color:var(--t0)}
+.tab.active{color:var(--ac);border-bottom-color:var(--ac)}
+
+/* ──────────────────────────────────────────────
+   DROP ZONE
+────────────────────────────────────────────── */
+.dz{border:2px dashed var(--bo);border-radius:var(--r);padding:26px;text-align:center;transition:all var(--tr);color:var(--t2)}
+.dz:hover,.dz.over{border-color:var(--ac);color:var(--ac);background:var(--acb)}
+.dzic{font-size:36px;margin-bottom:7px}
+
+/* ──────────────────────────────────────────────
+   TOAST
+────────────────────────────────────────────── */
+#toasts{position:fixed;bottom:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:6px}
+.toast{padding:10px 15px;border-radius:var(--rs);font-size:13px;font-weight:500;box-shadow:var(--sh);display:flex;align-items:center;gap:7px;max-width:310px;animation:tIn .2s ease}
+@keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.tok{background:#1a4d28;border:1px solid var(--ac);color:var(--ac)}
+.terr{background:#4d1a1a;border:1px solid var(--re);color:var(--re)}
+.tinf{background:#1a2f4d;border:1px solid #5b9bd5;color:#7eb8f5}
+
+/* ──────────────────────────────────────────────
+   EMPTY
+────────────────────────────────────────────── */
+.empty{text-align:center;padding:50px 20px;color:var(--t2)}
+.empi{font-size:50px;margin-bottom:12px;opacity:.5}
+.empty h3{font-family:var(--fh);font-size:17px;color:var(--t1);margin-bottom:5px}
+.empty p{font-size:13px}
+
+/* ──────────────────────────────────────────────
+   VIEWS
+────────────────────────────────────────────── */
+.vw{display:none}.vw.show{display:block}
+
+/* ──────────────────────────────────────────────
+   RESULTS
+────────────────────────────────────────────── */
+.rrow{display:flex;align-items:center;gap:11px;padding:9px 13px;border-radius:var(--rs);border:1px solid var(--bo);background:var(--bg2);margin-bottom:6px}
+.rpos{width:26px;font-family:var(--fh);font-size:17px;font-weight:800;color:var(--t2);flex-shrink:0}
+.rpos.top{color:var(--ye)}
+.rnm{flex:1;font-weight:600;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rprog{flex:2;min-width:70px}
+.pbar{height:5px;border-radius:3px;background:var(--bg3);overflow:hidden}
+.pfill{height:100%;border-radius:3px;background:var(--ac);transition:width .4s ease}
+.pfill.mid{background:var(--ye)}.pfill.low{background:var(--re)}
+.rproglt{font-size:10px;color:var(--t2);margin-top:2px;font-family:var(--fm)}
+
+/* ──────────────────────────────────────────────
+   INSTRUCTIONS
+────────────────────────────────────────────── */
+.step{display:flex;gap:13px;margin-bottom:16px;align-items:flex-start}
+.snum{width:28px;height:28px;border-radius:50%;background:var(--ac);color:#0e1210;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px}
+.sc h4{font-weight:700;font-size:14px;margin-bottom:5px}
+.sc p,.sc li{font-size:13px;color:var(--t1);line-height:1.65}
+.sc ul{padding-left:16px;margin-top:4px}.sc li{margin-bottom:3px}
+.code{background:var(--bg3);border:1px solid var(--bo);border-radius:var(--rs);padding:8px 12px;font-family:var(--fm);font-size:12px;color:var(--ac);margin:6px 0;word-break:break-all}
+.tg{display:inline-block;background:var(--acb);color:var(--ac);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700}
+
+/* grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+@media(max-width:600px){.g2{grid-template-columns:1fr}.sidebar{display:none}.content{padding:14px}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="logo">🪢 Nudos<span>EF</span></div>
+  <div class="topbar-mid">
+    <div class="sync-pill"><div class="sdot" id="sdot"></div><span id="smsg">Local</span></div>
+  </div>
+  <div class="topbar-right">
+    <select class="ysel" id="ySel" onchange="switchYear(this.value)"></select>
+    <button class="ibtn" onclick="openMod('yearMod')" title="Nuevo año académico">＋</button>
+    <button class="ibtn" onclick="openGhMod()" title="Config GitHub">⚙</button>
+    <button class="ibtn" id="thmBtn" onclick="toggleTheme()" title="Cambiar tema">☀</button>
+  </div>
+</header>
+
+<!-- BODY ROW -->
+<div class="body-row">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="nav-sec">
+    <div class="nav-lbl">Evaluación</div>
+    <button class="nvi active" id="nv-assess" onclick="goTo('assess')"><span class="nvic">📋</span>Tabla de Evaluación</button>
+    <button class="nvi" id="nv-students" onclick="goTo('students')"><span class="nvic">👥</span>Alumnos</button>
+    <button class="nvi" id="nv-knots" onclick="goTo('knots')"><span class="nvic">🪢</span>Nudos</button>
+  </div>
+  <div class="ndiv"></div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Herramientas</div>
+    <button class="nvi" id="nv-results" onclick="goTo('results')"><span class="nvic">🏆</span>Resultados</button>
+    <button class="nvi" id="nv-sync" onclick="goTo('sync')"><span class="nvic">🔄</span>Sincronización</button>
+    <button class="nvi" id="nv-help" onclick="goTo('help')"><span class="nvic">📖</span>Guía Netlify</button>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<main class="content">
+
+<!-- ══ ASSESS ═══════════════════════════════ -->
+<div class="vw show" id="v-assess">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+    <div>
+      <div class="stit">📋 Tabla de Evaluación</div>
+      <div class="ssub" id="yTag">—</div>
+    </div>
+    <button class="btn bg bsm" onclick="exportCSV()">⬇ Exportar CSV</button>
+  </div>
+  <div class="exbar">
+    <label>📅 Fecha del examen:</label>
+    <input type="date" class="inp isml" id="exDate" style="width:auto" onchange="saveExDate()"/>
+    <span id="exTxt" style="font-size:12px;color:var(--t2)"></span>
+  </div>
+  <div class="stats" id="statsRow"></div>
+  <div id="assessWrap"></div>
+</div>
+
+<!-- ══ STUDENTS ══════════════════════════════ -->
+<div class="vw" id="v-students">
+  <div class="stit">👥 Alumnos</div>
+  <div class="ssub">Gestiona el listado de alumnos del año activo</div>
+  <div class="card">
+    <div class="chd">
+      <div class="ct">Lista de alumnos</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn bg bsm" onclick="document.getElementById('csvF').click()">📂 Importar CSV</button>
+        <button class="btn bp bsm" onclick="openStudMod(null)">＋ Añadir</button>
+      </div>
+    </div>
+    <input type="file" id="csvF" accept=".csv,.txt" style="display:none" onchange="importCSV(event)"/>
+    <div class="dz" id="dropz" ondrop="dropCSV(event)" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" onclick="document.getElementById('csvF').click()">
+      <div class="dzic">📋</div>
+      <p><strong>Arrastra un CSV aquí</strong> o haz clic para seleccionar</p>
+      <p style="font-size:11px;margin-top:3px;color:var(--t2)">Un nombre por línea · sin cabecera necesaria</p>
+    </div>
+    <div id="studList" style="margin-top:13px"></div>
+  </div>
+</div>
+
+<!-- ══ KNOTS ═════════════════════════════════ -->
+<div class="vw" id="v-knots">
+  <div class="stit">🪢 Nudos</div>
+  <div class="ssub">Define los nudos y su tiempo máximo de ejecución</div>
+  <div class="card">
+    <div class="chd">
+      <div>
+        <div class="ct">Lista de nudos</div>
+        <div style="font-size:12px;color:var(--t1);margin-top:3px">
+          Valor por nudo: <strong id="kVal" style="color:var(--ac)">—</strong>
+          &nbsp;·&nbsp; Total máximo: <strong style="color:var(--ac)">10 pts</strong>
+        </div>
+      </div>
+      <button class="btn bp bsm" onclick="openKnotMod(null)">＋ Añadir nudo</button>
+    </div>
+    <div id="knotList"></div>
+  </div>
+</div>
+
+<!-- ══ RESULTS ═══════════════════════════════ -->
+<div class="vw" id="v-results">
+  <div class="stit">🏆 Resultados</div>
+  <div class="ssub" id="resYear">—</div>
+  <div class="stats" id="resStats"></div>
+  <div class="card">
+    <div class="chd">
+      <div class="ct">Clasificación</div>
+      <button class="btn bg bsm" onclick="exportCSV()">⬇ Exportar CSV</button>
+    </div>
+    <div id="rankList"></div>
+  </div>
+</div>
+
+<!-- ══ SYNC ══════════════════════════════════ -->
+<div class="vw" id="v-sync">
+  <div class="stit">🔄 Sincronización</div>
+  <div class="ssub">Comparte datos entre dispositivos vía GitHub Gist privado</div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:12px">GitHub Gist</div>
+    <p style="font-size:13px;color:var(--t1);margin-bottom:15px">Necesitas un Token de Acceso Personal con permiso <code>gist</code>. <a href="https://github.com/settings/tokens/new" target="_blank">Crear token →</a></p>
+    <div class="g2">
+      <div class="field">
+        <div class="flbl">🔑 Token de Acceso Personal</div>
+        <input type="password" class="inp" id="ghTok" placeholder="ghp_xxxxxxxxxxxxxxxx"/>
+      </div>
+      <div class="field">
+        <div class="flbl">📌 ID del Gist (vacío = crear nuevo)</div>
+        <input class="inp" id="ghGist" placeholder="a1b2c3d4e5f6…"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="btn bp" onclick="ghPush()">⬆ Subir datos</button>
+      <button class="btn bg" onclick="ghPull()">⬇ Descargar datos</button>
+      <button class="btn bg" onclick="saveGhConf()">💾 Guardar config</button>
+    </div>
+    <div id="syncLog" style="margin-top:14px;padding:11px;background:var(--bg2);border:1px solid var(--bo);border-radius:var(--rs);font-family:var(--fm);font-size:12px;color:var(--t1);min-height:38px">
+      Esperando acción…
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:11px">💾 Copia de seguridad local</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn bg bsm" onclick="exportJSON()">⬇ Exportar JSON</button>
+      <button class="btn bg bsm" onclick="document.getElementById('jsonF').click()">⬆ Importar JSON</button>
+    </div>
+    <input type="file" id="jsonF" accept=".json" style="display:none" onchange="importJSON(event)"/>
+  </div>
+</div>
+
+<!-- ══ HELP ══════════════════════════════════ -->
+<div class="vw" id="v-help">
+  <div class="stit">📖 Guía de despliegue</div>
+  <div class="ssub">Publica NudosEF en Netlify y sincroniza desde GitHub · paso a paso</div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(this,'tgh')">① Repositorio</button>
+      <button class="tab" onclick="showTab(this,'tnl')">② Netlify</button>
+      <button class="tab" onclick="showTab(this,'ttok')">③ Token GitHub</button>
+      <button class="tab" onclick="showTab(this,'tuso')">④ Uso diario</button>
+    </div>
+
+    <div id="tgh">
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Crear cuenta en GitHub</h4><p>Ve a <a href="https://github.com" target="_blank">github.com</a> y pulsa <span class="tg">Sign up</span>. Completa el formulario de registro con tu correo y contraseña.</p></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Crear repositorio nuevo</h4><ul><li>Pulsa el botón verde <span class="tg">New</span> en el panel lateral izquierdo.</li><li>Repository name: <div class="code">nudosEF</div></li><li>Visibilidad: <strong>Public</strong> (necesario para Netlify gratuito)</li><li>Activa ✔ <em>Add a README file</em></li><li>Pulsa <span class="tg">Create repository</span></li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Subir el archivo index.html</h4><ul><li>En la página del repo: <span class="tg">Add file</span> → <span class="tg">Upload files</span></li><li>Arrastra el archivo <code>index.html</code> descargado.</li><li>En "Commit changes" escribe: <em>Add NudosEF</em></li><li>Pulsa <span class="tg">Commit changes</span></li></ul></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Actualizar en el futuro</h4><p>Cuando tengas una nueva versión, repite el paso 3. Netlify detecta el cambio y redesplega automáticamente.</p></div></div>
+    </div>
+
+    <div id="tnl" style="display:none">
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Crear cuenta en Netlify</h4><p>Ve a <a href="https://netlify.com" target="_blank">netlify.com</a> → <span class="tg">Sign up</span>. Elige <strong>Continue with GitHub</strong> para vincular ambas cuentas directamente (recomendado).</p></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Importar proyecto desde GitHub</h4><ul><li>En el panel: <span class="tg">Add new site</span> → <span class="tg">Import an existing project</span></li><li>Elige <strong>GitHub</strong> como proveedor.</li><li>Autoriza acceso a tus repositorios si se solicita.</li><li>Selecciona el repositorio <strong>nudosEF</strong>.</li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Configurar el despliegue</h4><ul><li><strong>Branch:</strong> <code>main</code></li><li><strong>Base directory:</strong> (dejar en blanco)</li><li><strong>Build command:</strong> (dejar en blanco)</li><li><strong>Publish directory:</strong> (dejar en blanco o escribir <code>/</code>)</li><li>Pulsa <span class="tg">Deploy site</span></li></ul></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Personalizar la URL</h4><p>Netlify asigna un dominio aleatorio tipo <code>abc123.netlify.app</code>. Para cambiarlo:<br><strong>Site configuration → Domain management → Options → Edit site name</strong><br>Escribe p.ej. <code>mis-nudos-ef</code> y tendrás <code>mis-nudos-ef.netlify.app</code>.</p></div></div>
+    </div>
+
+    <div id="ttok" style="display:none">
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Ir a la configuración de tokens</h4><p>En GitHub: avatar superior derecho → <em>Settings</em> → <em>Developer settings</em> (barra izquierda, al fondo) → <em>Personal access tokens</em> → <em>Tokens (classic)</em>.</p></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Generar el token</h4><ul><li>Pulsa <span class="tg">Generate new token (classic)</span></li><li><strong>Note:</strong> <code>NudosEF Sync</code></li><li><strong>Expiration:</strong> elige la caducidad que prefieras</li><li>Activa únicamente: ✔ <strong>gist</strong></li><li>Pulsa <span class="tg">Generate token</span></li><li>⚠️ <strong>Copia el token inmediatamente</strong> — GitHub no vuelve a mostrarlo</li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Configurar en la app (primer dispositivo)</h4><ul><li>Ve a <strong>Sincronización</strong> en el menú lateral.</li><li>Pega el token en el campo correspondiente.</li><li>Deja el ID del Gist en blanco la primera vez.</li><li>Pulsa <span class="tg">Subir datos</span> → se creará un Gist privado automáticamente.</li><li>Anota el <strong>ID del Gist</strong> que aparece en el campo.</li></ul></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Sincronizar en otro dispositivo</h4><ul><li>Abre la app → sección <strong>Sincronización</strong>.</li><li>Introduce el mismo token y el ID del Gist anotado.</li><li>Pulsa <span class="tg">Descargar datos</span>.</li></ul></div></div>
+    </div>
+
+    <div id="tuso" style="display:none">
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Flujo recomendado en el examen</h4><ul><li>Al empezar: <strong>⬇ Descargar datos</strong> para tener la última versión.</li><li>Registra los resultados en la Tabla de Evaluación.</li><li>Al acabar: <strong>⬆ Subir datos</strong> para guardar en la nube.</li><li>Los datos también se guardan automáticamente en el navegador.</li></ul></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Crear y cambiar de año académico</h4><ul><li>Pulsa <strong>＋</strong> junto al selector de año en la barra superior.</li><li>Escribe el nombre: ej. <code>2026-2027</code> y pulsa Crear.</li><li>Cada año tiene sus propios alumnos, nudos, fechas y resultados.</li><li>Cambia de año con el selector desplegable de la cabecera.</li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Importar alumnos con CSV</h4><p>Crea un archivo <code>.csv</code> con un nombre de alumno por línea:</p><div class="code">Ana García Martínez<br>Luis Pérez López<br>María Rodríguez Sanz</div><p style="margin-top:5px">También puedes exportar desde Excel: columna A con nombres → <em>Guardar como CSV</em>.</p></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Marcar un nudo para toda la clase</h4><p>Cada columna de nudo tiene el botón <span class="tg">✓ Todos</span>. Púlsalo una vez para marcar a todos como correctos. Púlsalo de nuevo para desmarcar a todos.</p></div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+</div><!-- #app -->
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<!-- ══════════════ MODALS ══════════════════ -->
+
+<div class="mbg" id="studMod">
+  <div class="mod">
+    <div class="mtit" id="sMT">Añadir alumno</div>
+    <div class="field"><div class="flbl">Nombre completo</div>
+      <input class="inp" id="sNI" placeholder="Nombre Apellido" onkeydown="if(event.key==='Enter')saveStud()"/>
+    </div>
+    <div class="mac">
+      <button class="btn bg" onclick="closeMod('studMod')">Cancelar</button>
+      <button class="btn bp" onclick="saveStud()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="mbg" id="knotMod">
+  <div class="mod">
+    <div class="mtit" id="kMT">Añadir nudo</div>
+    <div class="field"><div class="flbl">Nombre del nudo</div>
+      <input class="inp" id="kNI" placeholder="Ej: As de guía" onkeydown="if(event.key==='Enter')saveKnot()"/>
+    </div>
+    <div class="field"><div class="flbl">⏱ Tiempo máximo en segundos (opcional)</div>
+      <input type="number" class="inp" id="kTI" placeholder="Ej: 60" min="1"/>
+    </div>
+    <div class="mac">
+      <button class="btn bg" onclick="closeMod('knotMod')">Cancelar</button>
+      <button class="btn bp" onclick="saveKnot()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="mbg" id="yearMod">
+  <div class="mod">
+    <div class="mtit">Nuevo año académico</div>
+    <div class="field"><div class="flbl">Nombre del año</div>
+      <input class="inp" id="yNI" placeholder="Ej: 2025-2026" onkeydown="if(event.key==='Enter')saveYear()"/>
+    </div>
+    <p style="font-size:12px;color:var(--t2);margin-top:-6px">Se crearán listas vacías independientes para este año.</p>
+    <div class="mac">
+      <button class="btn bg" onclick="closeMod('yearMod')">Cancelar</button>
+      <button class="btn bp" onclick="saveYear()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<div class="mbg" id="ghMod">
+  <div class="mod">
+    <div class="mtit">⚙ Configuración GitHub</div>
+    <div class="field"><div class="flbl">🔑 Token de Acceso Personal</div>
+      <input type="password" class="inp" id="ghTokM" placeholder="ghp_…"/>
+    </div>
+    <div class="field"><div class="flbl">📌 ID del Gist</div>
+      <input class="inp" id="ghGistM" placeholder="a1b2c3d4e5f6…"/>
+    </div>
+    <div class="mac">
+      <button class="btn bg" onclick="closeMod('ghMod')">Cancelar</button>
+      <button class="btn bp" onclick="saveGhMod()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════ */
+const DEF_KNOTS=[
+  {id:1,name:'Nudo plano',time:null},
+  {id:2,name:'As de guía',time:null},
+  {id:3,name:'Ballestrinque',time:null},
+  {id:4,name:'Vuelta de escota',time:null},
+  {id:5,name:'Nudo de pescador',time:null},
+  {id:6,name:'Nudo de ocho',time:null},
+  {id:7,name:'Nudo corredizo',time:null},
+  {id:8,name:'Presilla de alondra',time:null},
+  {id:9,name:'Nudo de rizo',time:null},
+  {id:10,name:'Vuelta del tejedor',time:null}
+];
+let DB={currentYear:null,years:{}};
+let _esi=null,_eki=null;
+
+function blankYear(){return{students:[],knots:JSON.parse(JSON.stringify(DEF_KNOTS)),results:{},examDate:''}}
+function Y(){return DB.years[DB.currentYear]}
+function save(){localStorage.setItem('nef5',JSON.stringify(DB))}
+function load(){
+  try{const r=localStorage.getItem('nef5');if(r)DB=JSON.parse(r);}catch(e){}
+  if(!DB.years||!DB.currentYear){const y=autoY();DB={currentYear:y,years:{[y]:blankYear()}};save();return;}
+  if(!DB.years[DB.currentYear]){
+    const k=Object.keys(DB.years)[0];
+    if(k)DB.currentYear=k;
+    else{const y=autoY();DB.years[y]=blankYear();DB.currentYear=y;}
+    save();
+  }
+}
+function autoY(){const d=new Date(),m=d.getMonth(),y=d.getFullYear();return m>=8?`${y}-${y+1}`:`${y-1}-${y}`}
+
+/* ═══════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════ */
+function toggleTheme(){
+  const h=document.documentElement,d=h.dataset.theme==='dark';
+  h.dataset.theme=d?'light':'dark';
+  document.getElementById('thmBtn').textContent=d?'☀':'🌙';
+  localStorage.setItem('nef_thm',d?'light':'dark');
+}
+function initTheme(){
+  const t=localStorage.getItem('nef_thm')||'dark';
+  document.documentElement.dataset.theme=t;
+  document.getElementById('thmBtn').textContent=t==='dark'?'☀':'🌙';
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+const VWS=['assess','students','knots','results','sync','help'];
+function goTo(v){
+  VWS.forEach(n=>{
+    document.getElementById('v-'+n)?.classList.toggle('show',n===v);
+    document.getElementById('nv-'+n)?.classList.toggle('active',n===v);
+  });
+  if(v==='assess')renderAssess();
+  if(v==='students')renderStuds();
+  if(v==='knots')renderKnots();
+  if(v==='results')renderResults();
+}
+function showTab(btn,id){
+  ['tgh','tnl','ttok','tuso'].forEach(t=>{const e=document.getElementById(t);if(e)e.style.display='none';});
+  document.getElementById(id).style.display='block';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function isActive(v){return document.getElementById('v-'+v)?.classList.contains('show')}
+
+/* ═══════════════════════════════════════════
+   YEARS
+═══════════════════════════════════════════ */
+function renderYSel(){
+  const s=document.getElementById('ySel');
+  s.innerHTML='';
+  Object.keys(DB.years).sort().forEach(y=>{
+    const o=document.createElement('option');
+    o.value=y;o.textContent=y;if(y===DB.currentYear)o.selected=true;
+    s.appendChild(o);
+  });
+  const yt='Año académico '+DB.currentYear;
+  document.getElementById('yTag').textContent=yt;
+  document.getElementById('resYear').textContent=yt;
+}
+function switchYear(y){
+  if(!DB.years[y])return;
+  DB.currentYear=y;save();renderYSel();
+  const a=document.querySelector('.vw.show')?.id?.replace('v-','');
+  if(a)goTo(a);
+  toast('Año cambiado a '+y,'inf');
+}
+function saveYear(){
+  const n=document.getElementById('yNI').value.trim();
+  if(!n)return toast('Escribe el nombre del año','err');
+  if(DB.years[n])return toast('Ese año ya existe','err');
+  DB.years[n]=blankYear();DB.currentYear=n;save();
+  renderYSel();closeMod('yearMod');goTo('assess');
+  toast('Año '+n+' creado','ok');
+}
+
+/* ═══════════════════════════════════════════
+   STUDENTS
+═══════════════════════════════════════════ */
+function renderStuds(){
+  const y=Y(),el=document.getElementById('studList');
+  if(!y.students.length){el.innerHTML=`<div class="empty"><div class="empi">👤</div><h3>Sin alumnos</h3><p>Añade manualmente o importa un CSV</p></div>`;return;}
+  el.innerHTML=y.students.map((s,i)=>`
+    <div class="li">
+      <div class="lin">${i+1}</div>
+      <div class="lim">${x(s)}</div>
+      <div class="lia">
+        <button class="btn bg bxs" onclick="openStudMod(${i})">✏</button>
+        <button class="btn bd bxs" onclick="delStud(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function openStudMod(idx){
+  _esi=idx;
+  document.getElementById('sMT').textContent=idx===null?'Añadir alumno':'Editar alumno';
+  document.getElementById('sNI').value=idx!==null?Y().students[idx]:'';
+  openMod('studMod');setTimeout(()=>document.getElementById('sNI').focus(),80);
+}
+function saveStud(){
+  const v=document.getElementById('sNI').value.trim();
+  if(!v)return toast('Escribe el nombre','err');
+  const y=Y();
+  if(_esi!==null){
+    const old=y.students[_esi];
+    y.students[_esi]=v;
+    if(y.results[old]){y.results[v]=y.results[old];delete y.results[old];}
+  }else{
+    if(y.students.includes(v))return toast('Alumno ya existe','err');
+    y.students.push(v);
+  }
+  save();renderStuds();if(isActive('assess'))renderAssess();
+  closeMod('studMod');toast('Alumno guardado','ok');
+}
+function delStud(i){
+  const y=Y(),n=y.students[i];
+  if(!confirm(`¿Eliminar a "${n}"? Se perderán sus resultados.`))return;
+  y.students.splice(i,1);delete y.results[n];
+  save();renderStuds();if(isActive('assess'))renderAssess();
+  toast('Alumno eliminado','inf');
+}
+function importCSV(e){
+  const f=e.target.files[0];if(!f)return;
+  new FileReader().onload=ev=>{parseCSV(ev.target.result)};
+  const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);
+  e.target.value='';
+}
+function dropCSV(e){
+  e.preventDefault();document.getElementById('dropz').classList.remove('over');
+  const f=e.dataTransfer.files[0];
+  if(!f)return;
+  const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);
+}
+function parseCSV(txt){
+  const y=Y();
+  const lines=txt.split(/\r?\n/).map(l=>l.split(',')[0].replace(/"/g,'').trim()).filter(l=>l&&l.length>0);
+  let n=0;
+  lines.forEach(nm=>{if(nm&&!y.students.includes(nm)){y.students.push(nm);n++;}});
+  save();renderStuds();if(isActive('assess'))renderAssess();
+  toast(`${n} alumno${n!==1?'s':''} importado${n!==1?'s':''}`,n?'ok':'inf');
+}
+
+/* ═══════════════════════════════════════════
+   KNOTS
+═══════════════════════════════════════════ */
+function kPts(){const y=Y();return y.knots.length?10/y.knots.length:0}
+function renderKnots(){
+  const y=Y();
+  document.getElementById('kVal').textContent=kPts().toFixed(2)+' pts';
+  const el=document.getElementById('knotList');
+  if(!y.knots.length){el.innerHTML=`<div class="empty"><div class="empi">🪢</div><h3>Sin nudos</h3><p>Añade el primer nudo</p></div>`;return;}
+  el.innerHTML=y.knots.map((k,i)=>`
+    <div class="li">
+      <div class="lin">${i+1}</div>
+      <div class="lim">${x(k.name)}</div>
+      ${k.time?`<div class="limt">⏱ ${k.time}s</div>`:''}
+      <div class="lia">
+        <button class="btn bg bxs" onclick="openKnotMod(${i})">✏</button>
+        <button class="btn bd bxs" onclick="delKnot(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+function openKnotMod(idx){
+  _eki=idx;
+  document.getElementById('kMT').textContent=idx===null?'Añadir nudo':'Editar nudo';
+  const k=idx!==null?Y().knots[idx]:null;
+  document.getElementById('kNI').value=k?k.name:'';
+  document.getElementById('kTI').value=k&&k.time?k.time:'';
+  openMod('knotMod');setTimeout(()=>document.getElementById('kNI').focus(),80);
+}
+function saveKnot(){
+  const n=document.getElementById('kNI').value.trim();
+  const t=parseInt(document.getElementById('kTI').value)||null;
+  if(!n)return toast('Escribe el nombre','err');
+  const y=Y();
+  if(_eki!==null){y.knots[_eki].name=n;y.knots[_eki].time=t;}
+  else y.knots.push({id:Date.now(),name:n,time:t});
+  save();renderKnots();if(isActive('assess'))renderAssess();
+  closeMod('knotMod');toast('Nudo guardado','ok');
+}
+function delKnot(i){
+  const y=Y(),k=y.knots[i];
+  if(!confirm(`¿Eliminar el nudo "${k.name}"?`))return;
+  y.knots.splice(i,1);
+  Object.keys(y.results).forEach(s=>delete y.results[s][k.id]);
+  save();renderKnots();if(isActive('assess'))renderAssess();
+  toast('Nudo eliminado','inf');
+}
+
+/* ═══════════════════════════════════════════
+   ASSESSMENT TABLE
+═══════════════════════════════════════════ */
+function getR(s,kid){const y=Y();return!!(y.results[s]&&y.results[s][kid])}
+function toggle(s,kid){
+  const y=Y();
+  if(!y.results[s])y.results[s]={};
+  y.results[s][kid]=!y.results[s][kid];
+  save();
+  const b=document.getElementById(`c_${eid(s)}_${kid}`);
+  if(b)b.className='ck'+(y.results[s][kid]?' yes':'');
+  refreshScore(s);refreshStats();
+}
+function markAll(kid){
+  const y=Y();
+  const all=y.students.every(s=>y.results[s]&&y.results[s][kid]);
+  y.students.forEach(s=>{
+    if(!y.results[s])y.results[s]={};
+    y.results[s][kid]=!all;
+    const b=document.getElementById(`c_${eid(s)}_${kid}`);
+    if(b)b.className='ck'+(!all?' yes':'');
+    refreshScore(s);
+  });
+  save();refreshStats();
+  toast(all?'Nudo desmarcado para todos':'Nudo marcado para todos ✓','ok');
+}
+function calcScore(s){
+  const y=Y();if(!y.knots.length)return 0;
+  return(y.knots.filter(k=>getR(s,k.id)).length/y.knots.length)*10;
+}
+function sBadge(sc){
+  const c=sc>=7?'sh':sc>=5?'sm':'sl';
+  return`<span class="sb ${c}">${sc.toFixed(2)}</span>`;
+}
+function refreshScore(s){
+  const el=document.getElementById(`sc_${eid(s)}`);
+  if(el)el.innerHTML=sBadge(calcScore(s));
+}
+function refreshStats(){
+  const y=Y();
+  if(!y.students.length){document.getElementById('statsRow').innerHTML='';return;}
+  const sc=y.students.map(s=>calcScore(s));
+  const avg=sc.reduce((a,b)=>a+b,0)/sc.length;
+  const pass=sc.filter(v=>v>=5).length;
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat"><div class="stn">${y.students.length}</div><div class="stl">Alumnos</div></div>
+    <div class="stat"><div class="stn">${y.knots.length}</div><div class="stl">Nudos</div></div>
+    <div class="stat"><div class="stn" style="color:var(--ac)">${pass}</div><div class="stl">Aprobados (≥5)</div></div>
+    <div class="stat"><div class="stn" style="color:${avg>=5?'var(--ac)':avg>=3?'var(--ye)':'var(--re)'}">${avg.toFixed(2)}</div><div class="stl">Nota media</div></div>`;
+}
+function saveExDate(){Y().examDate=document.getElementById('exDate').value;save();updateExTxt()}
+function updateExTxt(){
+  const d=Y().examDate;
+  document.getElementById('exTxt').textContent=d?
+    `(${new Date(d+'T12:00:00').toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'})})`:''
+}
+function renderAssess(){
+  const y=Y();
+  document.getElementById('exDate').value=y.examDate||'';
+  updateExTxt();refreshStats();
+  const wrap=document.getElementById('assessWrap');
+  if(!y.students.length||!y.knots.length){
+    const msg=!y.students.length
+      ?'Añade alumnos en la sección <strong>Alumnos</strong>'
+      :'Añade nudos en la sección <strong>Nudos</strong>';
+    wrap.innerHTML=`<div class="empty"><div class="empi">${!y.students.length?'👥':'🪢'}</div><h3>Sin datos</h3><p>${msg}</p></div>`;
+    return;
+  }
+  let h=`<div class="twrap"><table><thead><tr><th style="min-width:140px">Alumno</th>`;
+  y.knots.forEach(k=>{
+    h+=`<th class="kth"><div class="khi">
+      <span class="kn">${x(k.name)}</span>
+      ${k.time?`<span class="ktim">⏱${k.time}s</span>`:''}
+      <button class="mall" onclick="markAll(${k.id})">✓ Todos</button>
+    </div></th>`;
+  });
+  h+=`<th class="sth">Nota</th></tr></thead><tbody>`;
+  y.students.forEach(s=>{
+    h+=`<tr><td class="snm">${x(s)}</td>`;
+    y.knots.forEach(k=>{
+      h+=`<td class="cct"><button id="c_${eid(s)}_${k.id}" class="ck${getR(s,k.id)?' yes':''}" onclick="toggle('${esc(s)}',${k.id})" title="${getR(s,k.id)?'Correcto – clic para desmarcar':'Incorrecto – clic para marcar'}"></button></td>`;
+    });
+    h+=`<td class="sct" id="sc_${eid(s)}">${sBadge(calcScore(s))}</td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  wrap.innerHTML=h;
+}
+
+/* ═══════════════════════════════════════════
+   RESULTS
+═══════════════════════════════════════════ */
+function renderResults(){
+  const y=Y();
+  if(!y.students.length){
+    document.getElementById('rankList').innerHTML=`<div class="empty"><div class="empi">📊</div><h3>Sin datos</h3><p>Realiza primero la evaluación</p></div>`;
+    document.getElementById('resStats').innerHTML='';return;
+  }
+  const rows=y.students.map(s=>({name:s,sc:calcScore(s),ok:y.knots.filter(k=>getR(s,k.id)).length})).sort((a,b)=>b.sc-a.sc);
+  const scs=rows.map(r=>r.sc);
+  const avg=scs.reduce((a,b)=>a+b,0)/scs.length;
+  const pass=scs.filter(v=>v>=5).length;
+  document.getElementById('resStats').innerHTML=`
+    <div class="stat"><div class="stn">${avg.toFixed(2)}</div><div class="stl">Nota media</div></div>
+    <div class="stat"><div class="stn" style="color:var(--ac)">${pass}</div><div class="stl">Aprobados</div></div>
+    <div class="stat"><div class="stn" style="color:var(--re)">${rows.length-pass}</div><div class="stl">Suspensos</div></div>
+    <div class="stat"><div class="stn">${Math.max(...scs).toFixed(2)}</div><div class="stl">Nota máxima</div></div>
+    <div class="stat"><div class="stn">${Math.min(...scs).toFixed(2)}</div><div class="stl">Nota mínima</div></div>`;
+  document.getElementById('rankList').innerHTML=rows.map((r,i)=>{
+    const pct=(r.sc/10)*100;
+    const fc=r.sc>=7?'':r.sc>=5?' mid':' low';
+    return`<div class="rrow">
+      <div class="rpos${i<3?' top':''}">${i+1}</div>
+      <div class="rnm">${x(r.name)}</div>
+      <div class="rprog">
+        <div class="pbar"><div class="pfill${fc}" style="width:${pct}%"></div></div>
+        <div class="rproglt">${r.ok}/${y.knots.length} nudos correctos</div>
+      </div>
+      <div>${sBadge(r.sc)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   EXPORT / IMPORT
+═══════════════════════════════════════════ */
+function exportCSV(){
+  const y=Y();if(!y.students.length)return toast('No hay datos','err');
+  let c=`Alumno,${y.knots.map(k=>k.name).join(',')},Nota\n`;
+  y.students.forEach(s=>{c+=`${s},${y.knots.map(k=>getR(s,k.id)?'1':'0').join(',')},${calcScore(s).toFixed(2)}\n`;});
+  dl(new Blob([c],{type:'text/csv;charset=utf-8;'}),`nudosEF_${DB.currentYear}.csv`);
+  toast('CSV exportado','ok');
+}
+function exportJSON(){
+  dl(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),'nudosEF_backup.json');
+  toast('JSON exportado','ok');
+}
+function importJSON(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d.years)throw 0;
+      if(!confirm('¿Sobreescribir todos los datos actuales?'))return;
+      DB=d;save();renderYSel();goTo('assess');toast('Datos importados','ok');
+    }catch{toast('Archivo JSON inválido','err');}
+  };
+  r.readAsText(f);e.target.value='';
+}
+function dl(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
+
+/* ═══════════════════════════════════════════
+   GITHUB GIST
+═══════════════════════════════════════════ */
+function ghCfg(){return{tok:localStorage.getItem('nef_tok')||'',gist:localStorage.getItem('nef_gist')||''}}
+function saveGhConf(){
+  const t=document.getElementById('ghTok').value.trim(),g=document.getElementById('ghGist').value.trim();
+  localStorage.setItem('nef_tok',t);localStorage.setItem('nef_gist',g);
+  toast('Configuración guardada','ok');
+}
+function openGhMod(){
+  const{tok,gist}=ghCfg();
+  document.getElementById('ghTokM').value=tok;
+  document.getElementById('ghGistM').value=gist;
+  openMod('ghMod');
+}
+function saveGhMod(){
+  const t=document.getElementById('ghTokM').value.trim(),g=document.getElementById('ghGistM').value.trim();
+  localStorage.setItem('nef_tok',t);localStorage.setItem('nef_gist',g);
+  document.getElementById('ghTok').value=t;document.getElementById('ghGist').value=g;
+  closeMod('ghMod');toast('Configuración guardada','ok');
+}
+function setSt(s,m){
+  document.getElementById('sdot').className='sdot '+s;
+  document.getElementById('smsg').textContent=m;
+}
+function slog(m){const e=document.getElementById('syncLog');if(e)e.textContent=`[${new Date().toLocaleTimeString()}] ${m}`}
+async function ghPush(){
+  const{tok,gist}=ghCfg();
+  if(!tok)return toast('Configura el token primero','err');
+  setSt('busy','Subiendo…');slog('Conectando con GitHub…');
+  try{
+    const body={description:'NudosEF Data',public:false,files:{'nudosEF.json':{content:JSON.stringify(DB,null,2)}}};
+    const url=gist?`https://api.github.com/gists/${gist}`:'https://api.github.com/gists';
+    const res=await fetch(url,{method:gist?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    localStorage.setItem('nef_gist',d.id);
+    document.getElementById('ghGist').value=d.id;
+    document.getElementById('ghGistM').value=d.id;
+    setSt('ok','Sincronizado');slog('✅ Subida correcta. Gist ID: '+d.id);
+    toast('Datos subidos a GitHub','ok');
+  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error: '+e.message,'err');}
+}
+async function ghPull(){
+  const{tok,gist}=ghCfg();
+  if(!tok)return toast('Configura el token primero','err');
+  if(!gist)return toast('Introduce el ID del Gist','err');
+  setSt('busy','Descargando…');slog('Descargando desde GitHub…');
+  try{
+    const res=await fetch(`https://api.github.com/gists/${gist}`,{headers:{'Authorization':'token '+tok}});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const d=await res.json();
+    const raw=d.files['nudosEF.json']?.content;
+    if(!raw)throw new Error('Archivo nudosEF.json no encontrado en el Gist');
+    const p=JSON.parse(raw);
+    if(!p.years)throw new Error('Estructura de datos inválida');
+    DB=p;save();renderYSel();
+    const a=document.querySelector('.vw.show')?.id?.replace('v-','');
+    if(a)goTo(a);
+    setSt('ok','Sincronizado');slog('✅ Descarga correcta.');
+    toast('Datos descargados desde GitHub','ok');
+  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error: '+e.message,'err');}
+}
+function loadGhConf(){
+  const{tok,gist}=ghCfg();
+  document.getElementById('ghTok').value=tok;
+  document.getElementById('ghGist').value=gist;
+  document.getElementById('ghTokM').value=tok;
+  document.getElementById('ghGistM').value=gist;
+}
+
+/* ═══════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════ */
+function openMod(id){document.getElementById(id).classList.add('open')}
+function closeMod(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeMod(b.id)}));
+
+/* ═══════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════ */
+function toast(msg,type='inf'){
+  const c=document.getElementById('toasts');
+  const e=document.createElement('div');
+  const ico={ok:'✅',err:'❌',inf:'ℹ️'};
+  e.className=`toast t${type==='ok'?'ok':type==='err'?'err':'inf'}`;
+  e.innerHTML=`<span>${ico[type]||'ℹ️'}</span>${x(msg)}`;
+  c.appendChild(e);
+  setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(()=>e.remove(),300)},3000);
+}
+
+/* ═══════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════ */
+function x(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function esc(s){return String(s).replace(/'/g,"\\'")}
+function eid(s){return s.replace(/[^a-zA-Z0-9]/g,'_')}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+window.addEventListener('load',()=>{
+  initTheme();load();renderYSel();loadGhConf();renderAssess();
+});
+</script>
+</body>
+</html>
