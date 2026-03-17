@@ -56,26 +56,47 @@ input{cursor:text}
   width:var(--sidebar-w);min-width:var(--sidebar-w);
   background:var(--bg1);border-right:1px solid var(--bo);
   display:flex;flex-direction:column;overflow-y:auto;padding:10px 0;
-  transition:transform .25s ease;
   flex-shrink:0;
+  /* Desktop: collapse by shrinking width */
+  transition:width .25s ease,min-width .25s ease,border-color .25s ease,padding .25s ease;
+  overflow:hidden;
 }
-/* Overlay for mobile */
+/* Desktop collapsed */
+.sidebar.collapsed{
+  width:0 !important;
+  min-width:0 !important;
+  border-right-color:transparent !important;
+  padding:0 !important;
+}
+/* Overlay — only shown on mobile */
 .sb-overlay{
   display:none;position:fixed;inset:0;top:var(--topbar-h);
   background:rgba(0,0,0,.55);z-index:99;
 }
 .sb-overlay.open{display:block}
 
-/* Mobile: sidebar slides in over content */
+/* Mobile portrait: sidebar slides in from left */
 @media(max-width:768px){
   .sidebar{
     position:fixed;top:var(--topbar-h);left:0;
     height:calc(100vh - var(--topbar-h));
-    z-index:100;transform:translateX(-100%);
+    z-index:100;
+    width:var(--sidebar-w) !important;
+    min-width:var(--sidebar-w) !important;
+    border-right-color:var(--bo) !important;
+    padding:10px 0 !important;
+    overflow-y:auto;
+    transform:translateX(-100%);
+    transition:transform .25s ease !important;
     box-shadow:none;
   }
+  .sidebar.collapsed{
+    width:var(--sidebar-w) !important;
+    min-width:var(--sidebar-w) !important;
+    transform:translateX(-100%);
+  }
   .sidebar.open{
-    transform:translateX(0);
+    transform:translateX(0) !important;
     box-shadow:4px 0 24px rgba(0,0,0,.5);
   }
 }
@@ -569,23 +590,45 @@ function autoY(){const d=new Date(),m=d.getMonth(),y=d.getFullYear();return m>=8
 /* ═══════════════════════════════════════════
    SIDEBAR TOGGLE
 ═══════════════════════════════════════════ */
-let sidebarOpen=false;
+// true = sidebar visible, false = hidden
+let sidebarOpen=true; // starts open on desktop; init() sets correct value per device
 
+function isMobile(){return window.innerWidth<=768}
+
+function applySidebarState(){
+  const sb=document.getElementById('sidebar');
+  const ov=document.getElementById('sbOverlay');
+  const hb=document.getElementById('hbgBtn');
+  if(isMobile()){
+    // Mobile: slide via transform
+    sb.classList.toggle('open',sidebarOpen);
+    sb.classList.remove('collapsed');
+    ov.classList.toggle('open',sidebarOpen);
+  }else{
+    // Desktop: collapse via width
+    sb.classList.toggle('collapsed',!sidebarOpen);
+    sb.classList.remove('open');
+    ov.classList.remove('open'); // no overlay on desktop
+  }
+  hb.classList.toggle('open',sidebarOpen);
+}
 function toggleSidebar(){
   sidebarOpen=!sidebarOpen;
-  document.getElementById('sidebar').classList.toggle('open',sidebarOpen);
-  document.getElementById('sbOverlay').classList.toggle('open',sidebarOpen);
-  document.getElementById('hbgBtn').classList.toggle('open',sidebarOpen);
+  applySidebarState();
 }
 function closeSidebar(){
   sidebarOpen=false;
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sbOverlay').classList.remove('open');
-  document.getElementById('hbgBtn').classList.remove('open');
+  applySidebarState();
 }
-// On desktop the sidebar is always visible (CSS handles it)
-// We only need overlay behaviour on mobile
-function isMobile(){return window.innerWidth<=768}
+// Re-evaluate on screen resize / orientation change
+window.addEventListener('resize',()=>{
+  // On rotate to desktop: keep current logical state
+  // On rotate to mobile: close sidebar so it doesn't overlap unexpectedly
+  if(!isMobile()&&!sidebarOpen){
+    // nothing — leave collapsed state as-is
+  }
+  applySidebarState();
+});
 
 /* ═══════════════════════════════════════════
    THEME
@@ -612,7 +655,7 @@ function goTo(v){
     document.getElementById('nv-'+n)?.classList.toggle('active',n===v);
   });
   // Close sidebar on mobile after navigation
-  if(isMobile())closeSidebar();
+  if(isMobile()){sidebarOpen=false;applySidebarState();}
   if(v==='assess')renderAssess();
   if(v==='students')renderStuds();
   if(v==='knots')renderKnots();
@@ -1093,6 +1136,9 @@ window.addEventListener('load',()=>{
   load();
   renderYSel();
   loadGhConf();
+  // Sidebar starts open on desktop, closed on mobile
+  sidebarOpen=!isMobile();
+  applySidebarState();
   renderAssess();
 });
 </script>
