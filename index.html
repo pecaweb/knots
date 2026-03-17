@@ -7,35 +7,30 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
 <style>
-/* ──────────────────────────────────────────────
-   TOKENS
-────────────────────────────────────────────── */
+/* ── TOKENS ──────────────────────────────── */
 :root{
-  --fh:'Syne',sans-serif;
-  --fb:'Instrument Sans',sans-serif;
-  --fm:'JetBrains Mono',monospace;
-  --bg0:#0e1210;--bg1:#161c18;--bg2:#1e2721;--bg3:#27322a;
-  --bo:#2e3d33;--bo2:#3a5040;
-  --t0:#e8ede9;--t1:#9db59f;--t2:#5e7a62;
-  --ac:#6aba7a;--ac2:#4d9e5e;--acb:rgba(106,186,122,.13);
-  --re:#e07070;--reb:rgba(224,112,112,.13);
-  --ye:#d4b85a;--yeb:rgba(212,184,90,.13);
+  --fh:'Syne',sans-serif; --fb:'Instrument Sans',sans-serif; --fm:'JetBrains Mono',monospace;
+  --bg0:#0e1210; --bg1:#161c18; --bg2:#1e2721; --bg3:#27322a;
+  --bo:#2e3d33; --bo2:#3a5040;
+  --t0:#e8ede9; --t1:#9db59f; --t2:#5e7a62;
+  --ac:#6aba7a; --ac2:#4d9e5e; --acb:rgba(106,186,122,.13);
+  --re:#e07070; --reb:rgba(224,112,112,.13);
+  --ye:#d4b85a; --yeb:rgba(212,184,90,.13);
   --sh:0 4px 24px rgba(0,0,0,.5);
-  --r:10px;--rl:16px;--rs:6px;--tr:.18s ease;
+  --r:10px; --rl:16px; --rs:6px; --tr:.18s ease;
+  --topbar-h:56px; --sidebar-w:236px;
 }
 [data-theme="light"]{
-  --bg0:#f4f6f2;--bg1:#fff;--bg2:#ecf0e9;--bg3:#dde5d9;
-  --bo:#c8d4c4;--bo2:#a8bfa4;
-  --t0:#1a2318;--t1:#4a6450;--t2:#7a9a80;
-  --ac:#2e7d44;--ac2:#1f6032;--acb:rgba(46,125,68,.1);
-  --re:#b83232;--reb:rgba(184,50,50,.1);
-  --ye:#8a6a10;--yeb:rgba(138,106,16,.1);
+  --bg0:#f4f6f2; --bg1:#fff; --bg2:#ecf0e9; --bg3:#dde5d9;
+  --bo:#c8d4c4; --bo2:#a8bfa4;
+  --t0:#1a2318; --t1:#4a6450; --t2:#7a9a80;
+  --ac:#2e7d44; --ac2:#1f6032; --acb:rgba(46,125,68,.1);
+  --re:#b83232; --reb:rgba(184,50,50,.1);
+  --ye:#8a6a10; --yeb:rgba(138,106,16,.1);
   --sh:0 4px 24px rgba(0,0,0,.12);
 }
 
-/* ──────────────────────────────────────────────
-   RESET
-────────────────────────────────────────────── */
+/* ── RESET ───────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:var(--fb);background:var(--bg0);color:var(--t0);min-height:100vh;overflow-x:hidden;transition:background var(--tr),color var(--tr)}
@@ -47,40 +42,79 @@ a:hover{text-decoration:underline}
 button,input,select{font-family:var(--fb);cursor:pointer}
 input{cursor:text}
 
-/* ──────────────────────────────────────────────
-   LAYOUT
-────────────────────────────────────────────── */
-#app{display:grid;grid-template-rows:56px 1fr;height:100vh}
+/* ── LAYOUT ──────────────────────────────── */
+#app{display:grid;grid-template-rows:var(--topbar-h) 1fr;height:100vh}
 .topbar{
   grid-row:1;display:flex;align-items:center;justify-content:space-between;
-  padding:0 18px;background:var(--bg1);border-bottom:1px solid var(--bo);
-  position:sticky;top:0;z-index:100;gap:10px;
+  padding:0 14px;background:var(--bg1);border-bottom:1px solid var(--bo);
+  position:sticky;top:0;z-index:110;gap:8px;
 }
-.body-row{grid-row:2;display:flex;overflow:hidden}
-.sidebar{width:236px;min-width:236px;background:var(--bg1);border-right:1px solid var(--bo);display:flex;flex-direction:column;overflow-y:auto;padding:10px 0}
-.content{flex:1;overflow-y:auto;padding:22px}
+.body-row{grid-row:2;display:flex;overflow:hidden;position:relative}
 
-/* ──────────────────────────────────────────────
-   TOPBAR
-────────────────────────────────────────────── */
-.logo{display:flex;align-items:center;gap:8px;font-family:var(--fh);font-size:19px;font-weight:800;color:var(--t0);letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
+/* ── SIDEBAR ─────────────────────────────── */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--bg1);border-right:1px solid var(--bo);
+  display:flex;flex-direction:column;overflow-y:auto;padding:10px 0;
+  transition:transform .25s ease;
+  flex-shrink:0;
+}
+/* Overlay for mobile */
+.sb-overlay{
+  display:none;position:fixed;inset:0;top:var(--topbar-h);
+  background:rgba(0,0,0,.55);z-index:99;
+}
+.sb-overlay.open{display:block}
+
+/* Mobile: sidebar slides in over content */
+@media(max-width:768px){
+  .sidebar{
+    position:fixed;top:var(--topbar-h);left:0;
+    height:calc(100vh - var(--topbar-h));
+    z-index:100;transform:translateX(-100%);
+    box-shadow:none;
+  }
+  .sidebar.open{
+    transform:translateX(0);
+    box-shadow:4px 0 24px rgba(0,0,0,.5);
+  }
+}
+
+.content{flex:1;overflow-y:auto;padding:20px}
+
+/* ── TOPBAR ──────────────────────────────── */
+.logo{display:flex;align-items:center;gap:7px;font-family:var(--fh);font-size:18px;font-weight:800;color:var(--t0);letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
 .logo span{color:var(--ac)}
-.topbar-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
-.topbar-mid{flex:1;display:flex;justify-content:center;align-items:center}
-.sync-pill{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--bo);padding:4px 10px;border-radius:20px;font-size:12px;color:var(--t1);white-space:nowrap}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.topbar-mid{flex:1;display:flex;justify-content:center;align-items:center;min-width:0;overflow:hidden}
+
+/* hamburger */
+.hbg{
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;
+  width:33px;height:33px;border-radius:var(--rs);border:1px solid var(--bo);
+  background:var(--bg2);transition:all var(--tr);flex-shrink:0;
+}
+.hbg:hover{border-color:var(--ac);background:var(--acb)}
+.hbg span{display:block;width:15px;height:2px;background:var(--t1);border-radius:1px;transition:all .22s ease}
+.hbg.open span:nth-child(1){transform:translateY(6px) rotate(45deg);background:var(--ac)}
+.hbg.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.hbg.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg);background:var(--ac)}
+.hbg.open{border-color:var(--ac);background:var(--acb)}
+
+.sync-pill{display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--bo);padding:4px 9px;border-radius:20px;font-size:11.5px;color:var(--t1);white-space:nowrap;max-width:160px;overflow:hidden}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--t2);flex-shrink:0;transition:background .3s}
 .sdot.ok{background:var(--ac);box-shadow:0 0 6px var(--ac)}
 .sdot.err{background:var(--re)}
 .sdot.busy{background:var(--ye);animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-select.ysel{background:var(--bg2);border:1px solid var(--bo);color:var(--t0);padding:5px 9px;border-radius:var(--rs);font-size:13px;font-weight:600;font-family:var(--fb);outline:none;transition:border-color var(--tr)}
+
+select.ysel{background:var(--bg2);border:1px solid var(--bo);color:var(--t0);padding:5px 8px;border-radius:var(--rs);font-size:12px;font-weight:600;font-family:var(--fb);outline:none;transition:border-color var(--tr);max-width:110px}
 select.ysel:hover{border-color:var(--ac)}
+
 .ibtn{width:33px;height:33px;border-radius:var(--rs);border:1px solid var(--bo);background:var(--bg2);color:var(--t1);font-size:16px;display:flex;align-items:center;justify-content:center;transition:all var(--tr);flex-shrink:0}
 .ibtn:hover{border-color:var(--ac);color:var(--ac);background:var(--acb)}
 
-/* ──────────────────────────────────────────────
-   SIDEBAR
-────────────────────────────────────────────── */
+/* ── SIDEBAR NAV ─────────────────────────── */
 .nav-sec{padding:0 8px 4px}
 .nav-lbl{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--t2);padding:10px 8px 4px}
 .nvi{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border-radius:var(--rs);background:none;border:none;color:var(--t1);font-size:13.5px;font-weight:500;text-align:left;transition:all var(--tr)}
@@ -89,9 +123,7 @@ select.ysel:hover{border-color:var(--ac)}
 .nvic{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 .ndiv{height:1px;background:var(--bo);margin:7px 10px}
 
-/* ──────────────────────────────────────────────
-   BUTTONS
-────────────────────────────────────────────── */
+/* ── BUTTONS ─────────────────────────────── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);border:1px solid transparent;font-size:13px;font-weight:600;transition:all var(--tr);outline:none;white-space:nowrap;font-family:var(--fb)}
 .bp{background:var(--ac);color:#0e1210;border-color:var(--ac)}
 .bp:hover{background:var(--ac2);border-color:var(--ac2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(106,186,122,.4)}
@@ -102,18 +134,14 @@ select.ysel:hover{border-color:var(--ac)}
 .bsm{padding:4px 10px;font-size:12px}
 .bxs{padding:2px 7px;font-size:11px;border-radius:4px}
 
-/* ──────────────────────────────────────────────
-   CARDS
-────────────────────────────────────────────── */
+/* ── CARDS ───────────────────────────────── */
 .card{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--rl);padding:18px;margin-bottom:16px;box-shadow:var(--sh)}
 .chd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
 .ct{font-family:var(--fh);font-size:17px;font-weight:700;letter-spacing:.3px}
-.stit{font-family:var(--fh);font-size:26px;font-weight:800;letter-spacing:.5px;margin-bottom:4px}
-.ssub{font-size:13px;color:var(--t1);margin-bottom:18px}
+.stit{font-family:var(--fh);font-size:24px;font-weight:800;letter-spacing:.5px;margin-bottom:4px}
+.ssub{font-size:13px;color:var(--t1);margin-bottom:16px}
 
-/* ──────────────────────────────────────────────
-   FORM
-────────────────────────────────────────────── */
+/* ── FORM ────────────────────────────────── */
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
 .flbl{font-size:12px;font-weight:600;color:var(--t1);letter-spacing:.3px}
 .inp{background:var(--bg2);border:1px solid var(--bo);color:var(--t0);padding:8px 12px;border-radius:var(--rs);font-size:14px;outline:none;width:100%;transition:border-color var(--tr),box-shadow var(--tr)}
@@ -121,62 +149,50 @@ select.ysel:hover{border-color:var(--ac)}
 .inp::placeholder{color:var(--t2)}
 .isml{padding:5px 9px;font-size:13px}
 
-/* ──────────────────────────────────────────────
-   STATS
-────────────────────────────────────────────── */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:18px}
-.stat{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--r);padding:13px 16px}
-.stn{font-family:var(--fh);font-size:30px;font-weight:800;color:var(--ac);line-height:1}
+/* ── STATS ───────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--r);padding:12px 15px}
+.stn{font-family:var(--fh);font-size:28px;font-weight:800;color:var(--ac);line-height:1}
 .stl{font-size:11.5px;color:var(--t1);margin-top:3px;font-weight:500}
 
-/* ──────────────────────────────────────────────
-   EXAM DATE BAR
-────────────────────────────────────────────── */
-.exbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 13px;background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);margin-bottom:16px}
+/* ── EXAM DATE BAR ───────────────────────── */
+.exbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;background:var(--bg2);border:1px solid var(--bo);border-radius:var(--r);margin-bottom:14px}
 .exbar label{font-size:12px;font-weight:600;color:var(--t1);white-space:nowrap}
 
-/* ──────────────────────────────────────────────
-   TABLE
-────────────────────────────────────────────── */
+/* ── TABLE ───────────────────────────────── */
 .twrap{overflow-x:auto;border:1px solid var(--bo);border-radius:var(--r)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead{background:var(--bg2)}
 th{padding:8px 10px;text-align:left;font-weight:600;color:var(--t1);border-bottom:1px solid var(--bo);white-space:nowrap;font-family:var(--fb);font-size:12px}
-th.kth{text-align:center;min-width:80px;vertical-align:bottom;padding:6px 4px}
+th.kth{text-align:center;min-width:78px;vertical-align:bottom;padding:6px 4px}
 th.kth .khi{display:flex;flex-direction:column;align-items:center;gap:3px}
-th.kth .kn{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);height:68px;font-size:11px;font-weight:600;color:var(--t0);display:flex;align-items:center;padding:2px 0}
-th.kth .ktim{display:inline-flex;align-items:center;gap:2px;background:var(--bg3);border:1px solid var(--bo);color:var(--t2);padding:1px 4px;border-radius:3px;font-size:10px;font-family:var(--fm)}
-th.sth{text-align:center;background:var(--acb);color:var(--ac);font-size:13px;min-width:68px}
+th.kth .kn{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);height:66px;font-size:11px;font-weight:600;color:var(--t0);display:flex;align-items:center;padding:2px 0}
+th.kth .ktim{display:inline-flex;align-items:center;background:var(--bg3);border:1px solid var(--bo);color:var(--t2);padding:1px 4px;border-radius:3px;font-size:10px;font-family:var(--fm)}
+th.sth{text-align:center;background:var(--acb);color:var(--ac);font-size:13px;min-width:66px}
 td{padding:8px 10px;border-bottom:1px solid var(--bo);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--bg2)}
-td.snm{font-weight:600;font-size:13.5px;white-space:nowrap;min-width:138px}
-td.cct{text-align:center;padding:6px 4px}
+td.snm{font-weight:600;font-size:13px;white-space:nowrap;min-width:130px}
+td.cct{text-align:center;padding:5px 3px}
 td.sct{text-align:center}
-.mall{margin-top:3px;padding:2px 5px;font-size:9px;font-weight:700;border-radius:3px;border:1px solid var(--bo);background:var(--bg1);color:var(--t2);transition:all var(--tr);display:block;width:100%}
+.mall{margin-top:3px;padding:2px 4px;font-size:9px;font-weight:700;border-radius:3px;border:1px solid var(--bo);background:var(--bg1);color:var(--t2);transition:all var(--tr);display:block;width:100%}
 .mall:hover{border-color:var(--ac);color:var(--ac);background:var(--acb)}
 
-/* ──────────────────────────────────────────────
-   CHECKBOX
-────────────────────────────────────────────── */
-.ck{width:29px;height:29px;border-radius:7px;border:2px solid var(--bo);background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:0;transition:all var(--tr);outline:none;position:relative;overflow:hidden}
+/* ── CHECKBOX ────────────────────────────── */
+.ck{width:28px;height:28px;border-radius:7px;border:2px solid var(--bo);background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:0;transition:all var(--tr);outline:none;position:relative;overflow:hidden}
 .ck::after{content:'✓';font-size:15px;font-weight:800;color:var(--ac);opacity:0;transform:scale(.5);transition:all .15s}
 .ck:hover{border-color:var(--ac);background:var(--acb)}
 .ck:hover::after{opacity:.4;transform:scale(1)}
 .ck.yes{border-color:var(--ac);background:var(--acb)}
 .ck.yes::after{opacity:1;transform:scale(1)}
 
-/* ──────────────────────────────────────────────
-   SCORE BADGE
-────────────────────────────────────────────── */
+/* ── SCORE BADGE ─────────────────────────── */
 .sb{display:inline-block;padding:3px 9px;border-radius:20px;font-family:var(--fm);font-size:13px;font-weight:600}
 .sh{background:var(--acb);color:var(--ac)}
 .sm{background:var(--yeb);color:var(--ye)}
 .sl{background:var(--reb);color:var(--re)}
 
-/* ──────────────────────────────────────────────
-   LIST ITEMS
-────────────────────────────────────────────── */
+/* ── LIST ITEMS ──────────────────────────── */
 .li{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);border:1px solid var(--bo);background:var(--bg2);margin-bottom:6px;transition:border-color var(--tr)}
 .li:hover{border-color:var(--bo2)}
 .lin{width:23px;height:23px;border-radius:50%;background:var(--acb);color:var(--ac);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
@@ -184,105 +200,99 @@ td.sct{text-align:center}
 .limt{font-size:11px;color:var(--t2);white-space:nowrap;font-family:var(--fm)}
 .lia{display:flex;gap:5px;flex-shrink:0}
 
-/* ──────────────────────────────────────────────
-   MODAL
-────────────────────────────────────────────── */
+/* ── MODAL ───────────────────────────────── */
 .mbg{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);align-items:center;justify-content:center}
 .mbg.open{display:flex}
-.mod{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--rl);padding:24px;width:90%;max-width:460px;box-shadow:var(--sh);animation:mIn .2s ease}
+.mod{background:var(--bg1);border:1px solid var(--bo);border-radius:var(--rl);padding:24px;width:92%;max-width:460px;box-shadow:var(--sh);animation:mIn .2s ease}
 @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(-6px)}to{opacity:1;transform:none}}
 .mtit{font-family:var(--fh);font-size:19px;font-weight:800;color:var(--ac);margin-bottom:16px}
 .mac{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 
-/* ──────────────────────────────────────────────
-   TABS
-────────────────────────────────────────────── */
+/* ── TABS ────────────────────────────────── */
 .tabs{display:flex;gap:2px;border-bottom:1px solid var(--bo);margin-bottom:18px;flex-wrap:wrap}
-.tab{padding:7px 14px;background:none;border:none;color:var(--t2);font-size:13px;font-weight:600;font-family:var(--fb);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--tr)}
+.tab{padding:7px 12px;background:none;border:none;color:var(--t2);font-size:12.5px;font-weight:600;font-family:var(--fb);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--tr)}
 .tab:hover{color:var(--t0)}
 .tab.active{color:var(--ac);border-bottom-color:var(--ac)}
 
-/* ──────────────────────────────────────────────
-   DROP ZONE
-────────────────────────────────────────────── */
-.dz{border:2px dashed var(--bo);border-radius:var(--r);padding:26px;text-align:center;transition:all var(--tr);color:var(--t2)}
+/* ── DROP ZONE ───────────────────────────── */
+.dz{border:2px dashed var(--bo);border-radius:var(--r);padding:24px;text-align:center;transition:all var(--tr);color:var(--t2)}
 .dz:hover,.dz.over{border-color:var(--ac);color:var(--ac);background:var(--acb)}
-.dzic{font-size:36px;margin-bottom:7px}
+.dzic{font-size:34px;margin-bottom:7px}
 
-/* ──────────────────────────────────────────────
-   TOAST
-────────────────────────────────────────────── */
-#toasts{position:fixed;bottom:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:6px}
-.toast{padding:10px 15px;border-radius:var(--rs);font-size:13px;font-weight:500;box-shadow:var(--sh);display:flex;align-items:center;gap:7px;max-width:310px;animation:tIn .2s ease}
+/* ── TOAST ───────────────────────────────── */
+#toasts{position:fixed;bottom:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:6px}
+.toast{padding:10px 14px;border-radius:var(--rs);font-size:13px;font-weight:500;box-shadow:var(--sh);display:flex;align-items:center;gap:7px;max-width:300px;animation:tIn .2s ease}
 @keyframes tIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .tok{background:#1a4d28;border:1px solid var(--ac);color:var(--ac)}
 .terr{background:#4d1a1a;border:1px solid var(--re);color:var(--re)}
 .tinf{background:#1a2f4d;border:1px solid #5b9bd5;color:#7eb8f5}
 
-/* ──────────────────────────────────────────────
-   EMPTY
-────────────────────────────────────────────── */
-.empty{text-align:center;padding:50px 20px;color:var(--t2)}
-.empi{font-size:50px;margin-bottom:12px;opacity:.5}
+/* ── EMPTY ───────────────────────────────── */
+.empty{text-align:center;padding:48px 20px;color:var(--t2)}
+.empi{font-size:48px;margin-bottom:12px;opacity:.5}
 .empty h3{font-family:var(--fh);font-size:17px;color:var(--t1);margin-bottom:5px}
 .empty p{font-size:13px}
 
-/* ──────────────────────────────────────────────
-   VIEWS
-────────────────────────────────────────────── */
+/* ── VIEWS ───────────────────────────────── */
 .vw{display:none}.vw.show{display:block}
 
-/* ──────────────────────────────────────────────
-   RESULTS
-────────────────────────────────────────────── */
-.rrow{display:flex;align-items:center;gap:11px;padding:9px 13px;border-radius:var(--rs);border:1px solid var(--bo);background:var(--bg2);margin-bottom:6px}
+/* ── RESULTS ─────────────────────────────── */
+.rrow{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--rs);border:1px solid var(--bo);background:var(--bg2);margin-bottom:6px}
 .rpos{width:26px;font-family:var(--fh);font-size:17px;font-weight:800;color:var(--t2);flex-shrink:0}
 .rpos.top{color:var(--ye)}
-.rnm{flex:1;font-weight:600;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.rprog{flex:2;min-width:70px}
+.rnm{flex:1;font-weight:600;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.rprog{flex:2;min-width:60px}
 .pbar{height:5px;border-radius:3px;background:var(--bg3);overflow:hidden}
 .pfill{height:100%;border-radius:3px;background:var(--ac);transition:width .4s ease}
 .pfill.mid{background:var(--ye)}.pfill.low{background:var(--re)}
-.rproglt{font-size:10px;color:var(--t2);margin-top:2px;font-family:var(--fm)}
+.rplt{font-size:10px;color:var(--t2);margin-top:2px;font-family:var(--fm)}
 
-/* ──────────────────────────────────────────────
-   INSTRUCTIONS
-────────────────────────────────────────────── */
-.step{display:flex;gap:13px;margin-bottom:16px;align-items:flex-start}
-.snum{width:28px;height:28px;border-radius:50%;background:var(--ac);color:#0e1210;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px}
-.sc h4{font-weight:700;font-size:14px;margin-bottom:5px}
+/* ── INSTRUCTIONS ────────────────────────── */
+.step{display:flex;gap:12px;margin-bottom:15px;align-items:flex-start}
+.snum{width:27px;height:27px;border-radius:50%;background:var(--ac);color:#0e1210;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:2px}
+.sc h4{font-weight:700;font-size:14px;margin-bottom:4px}
 .sc p,.sc li{font-size:13px;color:var(--t1);line-height:1.65}
 .sc ul{padding-left:16px;margin-top:4px}.sc li{margin-bottom:3px}
 .code{background:var(--bg3);border:1px solid var(--bo);border-radius:var(--rs);padding:8px 12px;font-family:var(--fm);font-size:12px;color:var(--ac);margin:6px 0;word-break:break-all}
 .tg{display:inline-block;background:var(--acb);color:var(--ac);padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700}
 
 /* grid */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-@media(max-width:600px){.g2{grid-template-columns:1fr}.sidebar{display:none}.content{padding:14px}}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.g2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- TOP BAR -->
+<!-- ══════════ TOP BAR ══════════ -->
 <header class="topbar">
+  <!-- Hamburger -->
+  <button class="hbg" id="hbgBtn" onclick="toggleSidebar()" title="Menú">
+    <span></span><span></span><span></span>
+  </button>
+
   <div class="logo">🪢 Nudos<span>EF</span></div>
+
   <div class="topbar-mid">
     <div class="sync-pill"><div class="sdot" id="sdot"></div><span id="smsg">Local</span></div>
   </div>
+
   <div class="topbar-right">
     <select class="ysel" id="ySel" onchange="switchYear(this.value)"></select>
-    <button class="ibtn" onclick="openMod('yearMod')" title="Nuevo año académico">＋</button>
-    <button class="ibtn" onclick="openGhMod()" title="Config GitHub">⚙</button>
-    <button class="ibtn" id="thmBtn" onclick="toggleTheme()" title="Cambiar tema">☀</button>
+    <button class="ibtn" onclick="openMod('yearMod')" title="Nuevo año">＋</button>
+    <button class="ibtn" onclick="openGhMod()" title="GitHub">⚙</button>
+    <button class="ibtn" id="thmBtn" onclick="toggleTheme()" title="Tema">☀</button>
   </div>
 </header>
 
-<!-- BODY ROW -->
+<!-- ══════════ BODY ROW ══════════ -->
 <div class="body-row">
 
+<!-- Overlay for mobile sidebar -->
+<div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+
 <!-- SIDEBAR -->
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="nav-sec">
     <div class="nav-lbl">Evaluación</div>
     <button class="nvi active" id="nv-assess" onclick="goTo('assess')"><span class="nvic">📋</span>Tabla de Evaluación</button>
@@ -301,7 +311,7 @@ td.sct{text-align:center}
 <!-- CONTENT -->
 <main class="content">
 
-<!-- ══ ASSESS ═══════════════════════════════ -->
+<!-- ══ ASSESS ══════════════════════════════ -->
 <div class="vw show" id="v-assess">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
     <div>
@@ -319,7 +329,7 @@ td.sct{text-align:center}
   <div id="assessWrap"></div>
 </div>
 
-<!-- ══ STUDENTS ══════════════════════════════ -->
+<!-- ══ STUDENTS ════════════════════════════ -->
 <div class="vw" id="v-students">
   <div class="stit">👥 Alumnos</div>
   <div class="ssub">Gestiona el listado de alumnos del año activo</div>
@@ -332,7 +342,9 @@ td.sct{text-align:center}
       </div>
     </div>
     <input type="file" id="csvF" accept=".csv,.txt" style="display:none" onchange="importCSV(event)"/>
-    <div class="dz" id="dropz" ondrop="dropCSV(event)" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" onclick="document.getElementById('csvF').click()">
+    <div class="dz" id="dropz"
+      ondrop="dropCSV(event)" ondragover="event.preventDefault();this.classList.add('over')"
+      ondragleave="this.classList.remove('over')" onclick="document.getElementById('csvF').click()">
       <div class="dzic">📋</div>
       <p><strong>Arrastra un CSV aquí</strong> o haz clic para seleccionar</p>
       <p style="font-size:11px;margin-top:3px;color:var(--t2)">Un nombre por línea · sin cabecera necesaria</p>
@@ -341,7 +353,7 @@ td.sct{text-align:center}
   </div>
 </div>
 
-<!-- ══ KNOTS ═════════════════════════════════ -->
+<!-- ══ KNOTS ════════════════════════════════ -->
 <div class="vw" id="v-knots">
   <div class="stit">🪢 Nudos</div>
   <div class="ssub">Define los nudos y su tiempo máximo de ejecución</div>
@@ -351,7 +363,7 @@ td.sct{text-align:center}
         <div class="ct">Lista de nudos</div>
         <div style="font-size:12px;color:var(--t1);margin-top:3px">
           Valor por nudo: <strong id="kVal" style="color:var(--ac)">—</strong>
-          &nbsp;·&nbsp; Total máximo: <strong style="color:var(--ac)">10 pts</strong>
+          &nbsp;·&nbsp; Máximo: <strong style="color:var(--ac)">10 pts</strong>
         </div>
       </div>
       <button class="btn bp bsm" onclick="openKnotMod(null)">＋ Añadir nudo</button>
@@ -360,7 +372,7 @@ td.sct{text-align:center}
   </div>
 </div>
 
-<!-- ══ RESULTS ═══════════════════════════════ -->
+<!-- ══ RESULTS ══════════════════════════════ -->
 <div class="vw" id="v-results">
   <div class="stit">🏆 Resultados</div>
   <div class="ssub" id="resYear">—</div>
@@ -374,13 +386,16 @@ td.sct{text-align:center}
   </div>
 </div>
 
-<!-- ══ SYNC ══════════════════════════════════ -->
+<!-- ══ SYNC ═════════════════════════════════ -->
 <div class="vw" id="v-sync">
   <div class="stit">🔄 Sincronización</div>
   <div class="ssub">Comparte datos entre dispositivos vía GitHub Gist privado</div>
   <div class="card">
     <div class="ct" style="margin-bottom:12px">GitHub Gist</div>
-    <p style="font-size:13px;color:var(--t1);margin-bottom:15px">Necesitas un Token de Acceso Personal con permiso <code>gist</code>. <a href="https://github.com/settings/tokens/new" target="_blank">Crear token →</a></p>
+    <p style="font-size:13px;color:var(--t1);margin-bottom:14px">
+      Necesitas un Token de Acceso Personal con permiso <code>gist</code>.
+      <a href="https://github.com/settings/tokens/new" target="_blank">Crear token →</a>
+    </p>
     <div class="g2">
       <div class="field">
         <div class="flbl">🔑 Token de Acceso Personal</div>
@@ -421,33 +436,29 @@ td.sct{text-align:center}
       <button class="tab" onclick="showTab(this,'ttok')">③ Token GitHub</button>
       <button class="tab" onclick="showTab(this,'tuso')">④ Uso diario</button>
     </div>
-
     <div id="tgh">
-      <div class="step"><div class="snum">1</div><div class="sc"><h4>Crear cuenta en GitHub</h4><p>Ve a <a href="https://github.com" target="_blank">github.com</a> y pulsa <span class="tg">Sign up</span>. Completa el formulario de registro con tu correo y contraseña.</p></div></div>
-      <div class="step"><div class="snum">2</div><div class="sc"><h4>Crear repositorio nuevo</h4><ul><li>Pulsa el botón verde <span class="tg">New</span> en el panel lateral izquierdo.</li><li>Repository name: <div class="code">nudosEF</div></li><li>Visibilidad: <strong>Public</strong> (necesario para Netlify gratuito)</li><li>Activa ✔ <em>Add a README file</em></li><li>Pulsa <span class="tg">Create repository</span></li></ul></div></div>
-      <div class="step"><div class="snum">3</div><div class="sc"><h4>Subir el archivo index.html</h4><ul><li>En la página del repo: <span class="tg">Add file</span> → <span class="tg">Upload files</span></li><li>Arrastra el archivo <code>index.html</code> descargado.</li><li>En "Commit changes" escribe: <em>Add NudosEF</em></li><li>Pulsa <span class="tg">Commit changes</span></li></ul></div></div>
-      <div class="step"><div class="snum">4</div><div class="sc"><h4>Actualizar en el futuro</h4><p>Cuando tengas una nueva versión, repite el paso 3. Netlify detecta el cambio y redesplega automáticamente.</p></div></div>
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Crear cuenta en GitHub</h4><p>Ve a <a href="https://github.com" target="_blank">github.com</a> y pulsa <span class="tg">Sign up</span>.</p></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Crear repositorio nuevo</h4><ul><li>Pulsa el botón verde <span class="tg">New</span>.</li><li>Repository name: <div class="code">nudosEF</div></li><li>Visibilidad: <strong>Public</strong></li><li>Activa ✔ <em>Add a README file</em></li><li>Pulsa <span class="tg">Create repository</span></li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Subir el archivo index.html</h4><ul><li><span class="tg">Add file</span> → <span class="tg">Upload files</span></li><li>Arrastra el archivo <code>index.html</code>.</li><li>Escribe un mensaje de commit y pulsa <span class="tg">Commit changes</span></li></ul></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Actualizar en el futuro</h4><p>Repite el paso 3 con la nueva versión. Netlify redesplega automáticamente.</p></div></div>
     </div>
-
     <div id="tnl" style="display:none">
-      <div class="step"><div class="snum">1</div><div class="sc"><h4>Crear cuenta en Netlify</h4><p>Ve a <a href="https://netlify.com" target="_blank">netlify.com</a> → <span class="tg">Sign up</span>. Elige <strong>Continue with GitHub</strong> para vincular ambas cuentas directamente (recomendado).</p></div></div>
-      <div class="step"><div class="snum">2</div><div class="sc"><h4>Importar proyecto desde GitHub</h4><ul><li>En el panel: <span class="tg">Add new site</span> → <span class="tg">Import an existing project</span></li><li>Elige <strong>GitHub</strong> como proveedor.</li><li>Autoriza acceso a tus repositorios si se solicita.</li><li>Selecciona el repositorio <strong>nudosEF</strong>.</li></ul></div></div>
-      <div class="step"><div class="snum">3</div><div class="sc"><h4>Configurar el despliegue</h4><ul><li><strong>Branch:</strong> <code>main</code></li><li><strong>Base directory:</strong> (dejar en blanco)</li><li><strong>Build command:</strong> (dejar en blanco)</li><li><strong>Publish directory:</strong> (dejar en blanco o escribir <code>/</code>)</li><li>Pulsa <span class="tg">Deploy site</span></li></ul></div></div>
-      <div class="step"><div class="snum">4</div><div class="sc"><h4>Personalizar la URL</h4><p>Netlify asigna un dominio aleatorio tipo <code>abc123.netlify.app</code>. Para cambiarlo:<br><strong>Site configuration → Domain management → Options → Edit site name</strong><br>Escribe p.ej. <code>mis-nudos-ef</code> y tendrás <code>mis-nudos-ef.netlify.app</code>.</p></div></div>
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Crear cuenta en Netlify</h4><p>Ve a <a href="https://netlify.com" target="_blank">netlify.com</a> → <span class="tg">Sign up</span> → <strong>Continue with GitHub</strong> (recomendado).</p></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Importar proyecto</h4><ul><li><span class="tg">Add new site</span> → <span class="tg">Import an existing project</span></li><li>Elige <strong>GitHub</strong> y selecciona el repositorio <strong>nudosEF</strong>.</li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Configurar el despliegue</h4><ul><li><strong>Branch:</strong> <code>main</code></li><li><strong>Build command:</strong> (dejar en blanco)</li><li><strong>Publish directory:</strong> (dejar en blanco)</li><li>Pulsa <span class="tg">Deploy site</span></li></ul></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Personalizar la URL</h4><p><strong>Site configuration → Domain management → Options → Edit site name</strong><br>Ej: <code>mis-nudos-ef.netlify.app</code></p></div></div>
     </div>
-
     <div id="ttok" style="display:none">
-      <div class="step"><div class="snum">1</div><div class="sc"><h4>Ir a la configuración de tokens</h4><p>En GitHub: avatar superior derecho → <em>Settings</em> → <em>Developer settings</em> (barra izquierda, al fondo) → <em>Personal access tokens</em> → <em>Tokens (classic)</em>.</p></div></div>
-      <div class="step"><div class="snum">2</div><div class="sc"><h4>Generar el token</h4><ul><li>Pulsa <span class="tg">Generate new token (classic)</span></li><li><strong>Note:</strong> <code>NudosEF Sync</code></li><li><strong>Expiration:</strong> elige la caducidad que prefieras</li><li>Activa únicamente: ✔ <strong>gist</strong></li><li>Pulsa <span class="tg">Generate token</span></li><li>⚠️ <strong>Copia el token inmediatamente</strong> — GitHub no vuelve a mostrarlo</li></ul></div></div>
-      <div class="step"><div class="snum">3</div><div class="sc"><h4>Configurar en la app (primer dispositivo)</h4><ul><li>Ve a <strong>Sincronización</strong> en el menú lateral.</li><li>Pega el token en el campo correspondiente.</li><li>Deja el ID del Gist en blanco la primera vez.</li><li>Pulsa <span class="tg">Subir datos</span> → se creará un Gist privado automáticamente.</li><li>Anota el <strong>ID del Gist</strong> que aparece en el campo.</li></ul></div></div>
-      <div class="step"><div class="snum">4</div><div class="sc"><h4>Sincronizar en otro dispositivo</h4><ul><li>Abre la app → sección <strong>Sincronización</strong>.</li><li>Introduce el mismo token y el ID del Gist anotado.</li><li>Pulsa <span class="tg">Descargar datos</span>.</li></ul></div></div>
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Ir a la configuración de tokens</h4><p>GitHub → avatar → <em>Settings</em> → <em>Developer settings</em> → <em>Personal access tokens</em> → <em>Tokens (classic)</em>.</p></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Generar el token</h4><ul><li>Pulsa <span class="tg">Generate new token (classic)</span></li><li>Note: <code>NudosEF Sync</code></li><li>Activa únicamente: ✔ <strong>gist</strong></li><li>Pulsa <span class="tg">Generate token</span></li><li>⚠️ <strong>Copia el token inmediatamente</strong></li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Primer dispositivo</h4><ul><li>Ve a <strong>Sincronización</strong> → pega el token → deja el Gist vacío.</li><li>Pulsa <span class="tg">Subir datos</span> → se crea el Gist automáticamente.</li><li>Copia el <strong>ID del Gist</strong> que aparece en el campo.</li></ul></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Segundo dispositivo (móvil, tablet…)</h4><ul><li>Abre la app → <strong>Sincronización</strong>.</li><li>Introduce el mismo token y el ID del Gist.</li><li>Pulsa <span class="tg">Guardar config</span> y luego <span class="tg">Descargar datos</span>.</li></ul></div></div>
     </div>
-
     <div id="tuso" style="display:none">
-      <div class="step"><div class="snum">1</div><div class="sc"><h4>Flujo recomendado en el examen</h4><ul><li>Al empezar: <strong>⬇ Descargar datos</strong> para tener la última versión.</li><li>Registra los resultados en la Tabla de Evaluación.</li><li>Al acabar: <strong>⬆ Subir datos</strong> para guardar en la nube.</li><li>Los datos también se guardan automáticamente en el navegador.</li></ul></div></div>
-      <div class="step"><div class="snum">2</div><div class="sc"><h4>Crear y cambiar de año académico</h4><ul><li>Pulsa <strong>＋</strong> junto al selector de año en la barra superior.</li><li>Escribe el nombre: ej. <code>2026-2027</code> y pulsa Crear.</li><li>Cada año tiene sus propios alumnos, nudos, fechas y resultados.</li><li>Cambia de año con el selector desplegable de la cabecera.</li></ul></div></div>
-      <div class="step"><div class="snum">3</div><div class="sc"><h4>Importar alumnos con CSV</h4><p>Crea un archivo <code>.csv</code> con un nombre de alumno por línea:</p><div class="code">Ana García Martínez<br>Luis Pérez López<br>María Rodríguez Sanz</div><p style="margin-top:5px">También puedes exportar desde Excel: columna A con nombres → <em>Guardar como CSV</em>.</p></div></div>
-      <div class="step"><div class="snum">4</div><div class="sc"><h4>Marcar un nudo para toda la clase</h4><p>Cada columna de nudo tiene el botón <span class="tg">✓ Todos</span>. Púlsalo una vez para marcar a todos como correctos. Púlsalo de nuevo para desmarcar a todos.</p></div></div>
+      <div class="step"><div class="snum">1</div><div class="sc"><h4>Flujo recomendado</h4><ul><li>Al empezar: <strong>⬇ Descargar datos</strong> para tener la última versión.</li><li>Registra resultados en la Tabla de Evaluación.</li><li>Al acabar: <strong>⬆ Subir datos</strong> para guardar en la nube.</li></ul></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><h4>Años académicos</h4><ul><li>Pulsa <strong>＋</strong> junto al selector de año → escribe el nombre → <em>Crear</em>.</li><li>Cada año tiene datos completamente independientes.</li></ul></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><h4>Formato del CSV de alumnos</h4><p>Un nombre por línea, sin cabecera:</p><div class="code">Ana García Martínez<br>Luis Pérez López<br>María Rodríguez Sanz</div></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><h4>Marcar nudo para toda la clase</h4><p>Cada columna tiene el botón <span class="tg">✓ Todos</span>. Púlsalo para marcar o desmarcar a todos de una vez.</p></div></div>
     </div>
   </div>
 </div>
@@ -460,7 +471,6 @@ td.sct{text-align:center}
 <div id="toasts"></div>
 
 <!-- ══════════════ MODALS ══════════════════ -->
-
 <div class="mbg" id="studMod">
   <div class="mod">
     <div class="mtit" id="sMT">Añadir alumno</div>
@@ -544,7 +554,9 @@ function Y(){return DB.years[DB.currentYear]}
 function save(){localStorage.setItem('nef5',JSON.stringify(DB))}
 function load(){
   try{const r=localStorage.getItem('nef5');if(r)DB=JSON.parse(r);}catch(e){}
-  if(!DB.years||!DB.currentYear){const y=autoY();DB={currentYear:y,years:{[y]:blankYear()}};save();return;}
+  if(!DB.years||!DB.currentYear){
+    const y=autoY();DB={currentYear:y,years:{[y]:blankYear()}};save();return;
+  }
   if(!DB.years[DB.currentYear]){
     const k=Object.keys(DB.years)[0];
     if(k)DB.currentYear=k;
@@ -553,6 +565,27 @@ function load(){
   }
 }
 function autoY(){const d=new Date(),m=d.getMonth(),y=d.getFullYear();return m>=8?`${y}-${y+1}`:`${y-1}-${y}`}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR TOGGLE
+═══════════════════════════════════════════ */
+let sidebarOpen=false;
+
+function toggleSidebar(){
+  sidebarOpen=!sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('open',sidebarOpen);
+  document.getElementById('sbOverlay').classList.toggle('open',sidebarOpen);
+  document.getElementById('hbgBtn').classList.toggle('open',sidebarOpen);
+}
+function closeSidebar(){
+  sidebarOpen=false;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('open');
+  document.getElementById('hbgBtn').classList.remove('open');
+}
+// On desktop the sidebar is always visible (CSS handles it)
+// We only need overlay behaviour on mobile
+function isMobile(){return window.innerWidth<=768}
 
 /* ═══════════════════════════════════════════
    THEME
@@ -578,6 +611,8 @@ function goTo(v){
     document.getElementById('v-'+n)?.classList.toggle('show',n===v);
     document.getElementById('nv-'+n)?.classList.toggle('active',n===v);
   });
+  // Close sidebar on mobile after navigation
+  if(isMobile())closeSidebar();
   if(v==='assess')renderAssess();
   if(v==='students')renderStuds();
   if(v==='knots')renderKnots();
@@ -590,6 +625,7 @@ function showTab(btn,id){
   btn.classList.add('active');
 }
 function isActive(v){return document.getElementById('v-'+v)?.classList.contains('show')}
+function activeView(){return document.querySelector('.vw.show')?.id?.replace('v-','')||'assess'}
 
 /* ═══════════════════════════════════════════
    YEARS
@@ -608,9 +644,8 @@ function renderYSel(){
 }
 function switchYear(y){
   if(!DB.years[y])return;
-  DB.currentYear=y;save();renderYSel();
-  const a=document.querySelector('.vw.show')?.id?.replace('v-','');
-  if(a)goTo(a);
+  DB.currentYear=y;save();
+  fullRefresh();
   toast('Año cambiado a '+y,'inf');
 }
 function saveYear(){
@@ -618,8 +653,26 @@ function saveYear(){
   if(!n)return toast('Escribe el nombre del año','err');
   if(DB.years[n])return toast('Ese año ya existe','err');
   DB.years[n]=blankYear();DB.currentYear=n;save();
-  renderYSel();closeMod('yearMod');goTo('assess');
+  closeMod('yearMod');
+  fullRefresh();
   toast('Año '+n+' creado','ok');
+}
+
+/* ═══════════════════════════════════════════
+   FULL REFRESH — rebuilds everything after sync/import
+═══════════════════════════════════════════ */
+function fullRefresh(){
+  renderYSel();
+  // Re-render whichever view is currently active
+  const v=activeView();
+  // Force view to reset then re-render
+  VWS.forEach(n=>document.getElementById('v-'+n)?.classList.remove('show'));
+  document.getElementById('v-'+v)?.classList.add('show');
+  if(v==='assess')renderAssess();
+  else if(v==='students')renderStuds();
+  else if(v==='knots')renderKnots();
+  else if(v==='results')renderResults();
+  else goTo('assess'); // fallback
 }
 
 /* ═══════════════════════════════════════════
@@ -627,7 +680,9 @@ function saveYear(){
 ═══════════════════════════════════════════ */
 function renderStuds(){
   const y=Y(),el=document.getElementById('studList');
-  if(!y.students.length){el.innerHTML=`<div class="empty"><div class="empi">👤</div><h3>Sin alumnos</h3><p>Añade manualmente o importa un CSV</p></div>`;return;}
+  if(!y.students.length){
+    el.innerHTML=`<div class="empty"><div class="empi">👤</div><h3>Sin alumnos</h3><p>Añade manualmente o importa un CSV</p></div>`;return;
+  }
   el.innerHTML=y.students.map((s,i)=>`
     <div class="li">
       <div class="lin">${i+1}</div>
@@ -668,19 +723,17 @@ function delStud(i){
 }
 function importCSV(e){
   const f=e.target.files[0];if(!f)return;
-  new FileReader().onload=ev=>{parseCSV(ev.target.result)};
   const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);
   e.target.value='';
 }
 function dropCSV(e){
   e.preventDefault();document.getElementById('dropz').classList.remove('over');
-  const f=e.dataTransfer.files[0];
-  if(!f)return;
+  const f=e.dataTransfer.files[0];if(!f)return;
   const r=new FileReader();r.onload=ev=>parseCSV(ev.target.result);r.readAsText(f);
 }
 function parseCSV(txt){
   const y=Y();
-  const lines=txt.split(/\r?\n/).map(l=>l.split(',')[0].replace(/"/g,'').trim()).filter(l=>l&&l.length>0);
+  const lines=txt.split(/\r?\n/).map(l=>l.split(',')[0].replace(/"/g,'').trim()).filter(l=>l);
   let n=0;
   lines.forEach(nm=>{if(nm&&!y.students.includes(nm)){y.students.push(nm);n++;}});
   save();renderStuds();if(isActive('assess'))renderAssess();
@@ -695,7 +748,9 @@ function renderKnots(){
   const y=Y();
   document.getElementById('kVal').textContent=kPts().toFixed(2)+' pts';
   const el=document.getElementById('knotList');
-  if(!y.knots.length){el.innerHTML=`<div class="empty"><div class="empi">🪢</div><h3>Sin nudos</h3><p>Añade el primer nudo</p></div>`;return;}
+  if(!y.knots.length){
+    el.innerHTML=`<div class="empty"><div class="empi">🪢</div><h3>Sin nudos</h3><p>Añade el primer nudo</p></div>`;return;
+  }
   el.innerHTML=y.knots.map((k,i)=>`
     <div class="li">
       <div class="lin">${i+1}</div>
@@ -802,7 +857,7 @@ function renderAssess(){
     wrap.innerHTML=`<div class="empty"><div class="empi">${!y.students.length?'👥':'🪢'}</div><h3>Sin datos</h3><p>${msg}</p></div>`;
     return;
   }
-  let h=`<div class="twrap"><table><thead><tr><th style="min-width:140px">Alumno</th>`;
+  let h=`<div class="twrap"><table><thead><tr><th style="min-width:130px">Alumno</th>`;
   y.knots.forEach(k=>{
     h+=`<th class="kth"><div class="khi">
       <span class="kn">${x(k.name)}</span>
@@ -814,7 +869,7 @@ function renderAssess(){
   y.students.forEach(s=>{
     h+=`<tr><td class="snm">${x(s)}</td>`;
     y.knots.forEach(k=>{
-      h+=`<td class="cct"><button id="c_${eid(s)}_${k.id}" class="ck${getR(s,k.id)?' yes':''}" onclick="toggle('${esc(s)}',${k.id})" title="${getR(s,k.id)?'Correcto – clic para desmarcar':'Incorrecto – clic para marcar'}"></button></td>`;
+      h+=`<td class="cct"><button id="c_${eid(s)}_${k.id}" class="ck${getR(s,k.id)?' yes':''}" onclick="toggle('${esc(s)}',${k.id})"></button></td>`;
     });
     h+=`<td class="sct" id="sc_${eid(s)}">${sBadge(calcScore(s))}</td></tr>`;
   });
@@ -849,7 +904,7 @@ function renderResults(){
       <div class="rnm">${x(r.name)}</div>
       <div class="rprog">
         <div class="pbar"><div class="pfill${fc}" style="width:${pct}%"></div></div>
-        <div class="rproglt">${r.ok}/${y.knots.length} nudos correctos</div>
+        <div class="rplt">${r.ok}/${y.knots.length} nudos correctos</div>
       </div>
       <div>${sBadge(r.sc)}</div>
     </div>`;
@@ -878,7 +933,7 @@ function importJSON(e){
       const d=JSON.parse(ev.target.result);
       if(!d.years)throw 0;
       if(!confirm('¿Sobreescribir todos los datos actuales?'))return;
-      DB=d;save();renderYSel();goTo('assess');toast('Datos importados','ok');
+      DB=d;save();fullRefresh();toast('Datos importados','ok');
     }catch{toast('Archivo JSON inválido','err');}
   };
   r.readAsText(f);e.target.value='';
@@ -886,12 +941,16 @@ function importJSON(e){
 function dl(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 
 /* ═══════════════════════════════════════════
-   GITHUB GIST
+   GITHUB GIST — SYNC FIXED
 ═══════════════════════════════════════════ */
 function ghCfg(){return{tok:localStorage.getItem('nef_tok')||'',gist:localStorage.getItem('nef_gist')||''}}
+
+function syncFieldsToStorage(){
+  localStorage.setItem('nef_tok',document.getElementById('ghTok').value.trim());
+  localStorage.setItem('nef_gist',document.getElementById('ghGist').value.trim());
+}
 function saveGhConf(){
-  const t=document.getElementById('ghTok').value.trim(),g=document.getElementById('ghGist').value.trim();
-  localStorage.setItem('nef_tok',t);localStorage.setItem('nef_gist',g);
+  syncFieldsToStorage();
   toast('Configuración guardada','ok');
 }
 function openGhMod(){
@@ -903,51 +962,83 @@ function openGhMod(){
 function saveGhMod(){
   const t=document.getElementById('ghTokM').value.trim(),g=document.getElementById('ghGistM').value.trim();
   localStorage.setItem('nef_tok',t);localStorage.setItem('nef_gist',g);
-  document.getElementById('ghTok').value=t;document.getElementById('ghGist').value=g;
+  // Sync back to sync-page fields too
+  document.getElementById('ghTok').value=t;
+  document.getElementById('ghGist').value=g;
   closeMod('ghMod');toast('Configuración guardada','ok');
 }
+
 function setSt(s,m){
   document.getElementById('sdot').className='sdot '+s;
   document.getElementById('smsg').textContent=m;
 }
-function slog(m){const e=document.getElementById('syncLog');if(e)e.textContent=`[${new Date().toLocaleTimeString()}] ${m}`}
+function slog(m){
+  const e=document.getElementById('syncLog');
+  if(e)e.textContent=`[${new Date().toLocaleTimeString()}] ${m}`;
+}
+
 async function ghPush(){
+  // Always read latest values from the fields before pushing
+  syncFieldsToStorage();
   const{tok,gist}=ghCfg();
   if(!tok)return toast('Configura el token primero','err');
   setSt('busy','Subiendo…');slog('Conectando con GitHub…');
   try{
     const body={description:'NudosEF Data',public:false,files:{'nudosEF.json':{content:JSON.stringify(DB,null,2)}}};
     const url=gist?`https://api.github.com/gists/${gist}`:'https://api.github.com/gists';
-    const res=await fetch(url,{method:gist?'PATCH':'POST',headers:{'Authorization':'token '+tok,'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    const res=await fetch(url,{
+      method:gist?'PATCH':'POST',
+      headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(!res.ok){
+      const errText=await res.text();
+      throw new Error(`HTTP ${res.status} – ${errText.slice(0,120)}`);
+    }
     const d=await res.json();
+    // Save gist ID everywhere
     localStorage.setItem('nef_gist',d.id);
     document.getElementById('ghGist').value=d.id;
     document.getElementById('ghGistM').value=d.id;
-    setSt('ok','Sincronizado');slog('✅ Subida correcta. Gist ID: '+d.id);
+    setSt('ok','Sincronizado');
+    slog(`✅ Subida correcta. Gist ID: ${d.id}`);
     toast('Datos subidos a GitHub','ok');
-  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error: '+e.message,'err');}
+  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error al subir: '+e.message,'err');}
 }
+
 async function ghPull(){
+  // Always read latest values from the fields
+  syncFieldsToStorage();
   const{tok,gist}=ghCfg();
   if(!tok)return toast('Configura el token primero','err');
   if(!gist)return toast('Introduce el ID del Gist','err');
   setSt('busy','Descargando…');slog('Descargando desde GitHub…');
   try{
-    const res=await fetch(`https://api.github.com/gists/${gist}`,{headers:{'Authorization':'token '+tok}});
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    const res=await fetch(`https://api.github.com/gists/${gist}`,{
+      headers:{'Authorization':'Bearer '+tok,'Cache-Control':'no-cache'}
+    });
+    if(!res.ok){
+      const errText=await res.text();
+      throw new Error(`HTTP ${res.status} – ${errText.slice(0,120)}`);
+    }
     const d=await res.json();
     const raw=d.files['nudosEF.json']?.content;
     if(!raw)throw new Error('Archivo nudosEF.json no encontrado en el Gist');
     const p=JSON.parse(raw);
     if(!p.years)throw new Error('Estructura de datos inválida');
-    DB=p;save();renderYSel();
-    const a=document.querySelector('.vw.show')?.id?.replace('v-','');
-    if(a)goTo(a);
-    setSt('ok','Sincronizado');slog('✅ Descarga correcta.');
-    toast('Datos descargados desde GitHub','ok');
-  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error: '+e.message,'err');}
+
+    // ── APPLY & REFRESH ───────────────────
+    DB=p;
+    save();          // persist to localStorage
+    fullRefresh();   // rebuild year selector + active view completely
+    // ──────────────────────────────────────
+
+    setSt('ok','Sincronizado');
+    slog(`✅ Descarga correcta. Año activo: ${DB.currentYear} · Alumnos: ${Y().students.length}`);
+    toast(`Datos descargados ✓ — ${Y().students.length} alumnos cargados`,'ok');
+  }catch(e){setSt('err','Error');slog('❌ '+e.message);toast('Error al descargar: '+e.message,'err');}
 }
+
 function loadGhConf(){
   const{tok,gist}=ghCfg();
   document.getElementById('ghTok').value=tok;
@@ -962,6 +1053,8 @@ function loadGhConf(){
 function openMod(id){document.getElementById(id).classList.add('open')}
 function closeMod(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.mbg').forEach(b=>b.addEventListener('click',e=>{if(e.target===b)closeMod(b.id)}));
+// Escape key closes modals
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mbg.open').forEach(m=>closeMod(m.id))});
 
 /* ═══════════════════════════════════════════
    TOAST
@@ -973,7 +1066,7 @@ function toast(msg,type='inf'){
   e.className=`toast t${type==='ok'?'ok':type==='err'?'err':'inf'}`;
   e.innerHTML=`<span>${ico[type]||'ℹ️'}</span>${x(msg)}`;
   c.appendChild(e);
-  setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(()=>e.remove(),300)},3000);
+  setTimeout(()=>{e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(()=>e.remove(),300)},3500);
 }
 
 /* ═══════════════════════════════════════════
@@ -987,7 +1080,11 @@ function eid(s){return s.replace(/[^a-zA-Z0-9]/g,'_')}
    INIT
 ═══════════════════════════════════════════ */
 window.addEventListener('load',()=>{
-  initTheme();load();renderYSel();loadGhConf();renderAssess();
+  initTheme();
+  load();
+  renderYSel();
+  loadGhConf();
+  renderAssess();
 });
 </script>
 </body>
