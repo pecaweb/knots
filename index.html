@@ -6,6 +6,7 @@
 <title>NudosEF – Evaluación de Nudos</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ── TOKENS ──────────────────────────────── */
 :root{
@@ -280,6 +281,17 @@ td.sct{text-align:center}
 /* grid */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:500px){.g2{grid-template-columns:1fr}}
+/* ── FINALIZED STATE ─────────────────────── */
+.fin-banner{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--yeb);border:1px solid var(--ye);border-radius:var(--r);
+  margin-bottom:14px;font-size:13px;font-weight:600;color:var(--ye);
+}
+.fin-banner .fin-icon{font-size:18px}
+.fin-banner .fin-txt{flex:1}
+.ck.locked{opacity:.45;cursor:not-allowed;pointer-events:none}
+.mall.locked{opacity:.4;cursor:not-allowed;pointer-events:none}
+.exbar input.locked{opacity:.6;pointer-events:none}
 </style>
 </head>
 <body>
@@ -339,8 +351,14 @@ td.sct{text-align:center}
       <div class="stit">📋 Tabla de Evaluación</div>
       <div class="ssub" id="yTag">—</div>
     </div>
-    <button class="btn bg bsm" onclick="exportCSV()">⬇ Exportar CSV</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn bg bsm" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn bg bsm" onclick="exportXLSX()">⬇ Excel</button>
+      <button class="btn bp bsm" id="finBtn" onclick="finalizeExam()">🔒 Finalizar prueba</button>
+      <button class="btn bg bsm" id="editBtn" onclick="unlockExam()" style="display:none">✏️ Editar</button>
+    </div>
   </div>
+  <div id="finBanner" style="display:none"></div>
   <div class="exbar">
     <label>📅 Fecha del examen:</label>
     <input type="date" class="inp isml" id="exDate" style="width:auto" onchange="saveExDate()"/>
@@ -401,7 +419,10 @@ td.sct{text-align:center}
   <div class="card">
     <div class="chd">
       <div class="ct">Clasificación</div>
-      <button class="btn bg bsm" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn bg bsm" onclick="exportCSV()">⬇ CSV</button>
+        <button class="btn bg bsm" onclick="exportXLSX()">⬇ Excel</button>
+      </div>
     </div>
     <div id="rankList"></div>
   </div>
@@ -570,7 +591,7 @@ const DEF_KNOTS=[
 let DB={currentYear:null,years:{}};
 let _esi=null,_eki=null;
 
-function blankYear(){return{students:[],knots:JSON.parse(JSON.stringify(DEF_KNOTS)),results:{},examDate:''}}
+function blankYear(){return{students:[],knots:JSON.parse(JSON.stringify(DEF_KNOTS)),results:{},examDate:'',finalized:false}}
 function Y(){return DB.years[DB.currentYear]}
 function save(){localStorage.setItem('nef5',JSON.stringify(DB))}
 function load(){
@@ -838,6 +859,7 @@ function delKnot(i){
 function getR(s,kid){const y=Y();return!!(y.results[s]&&y.results[s][kid])}
 function toggle(s,kid){
   const y=Y();
+  if(y.finalized)return toast('Prueba finalizada. Pulsa Editar para modificar.','err');
   if(!y.results[s])y.results[s]={};
   y.results[s][kid]=!y.results[s][kid];
   save();
@@ -847,6 +869,7 @@ function toggle(s,kid){
 }
 function markAll(kid){
   const y=Y();
+  if(y.finalized)return toast('Prueba finalizada. Pulsa Editar para modificar.','err');
   const all=y.students.every(s=>y.results[s]&&y.results[s][kid]);
   y.students.forEach(s=>{
     if(!y.results[s])y.results[s]={};
@@ -882,7 +905,7 @@ function refreshStats(){
     <div class="stat"><div class="stn" style="color:var(--ac)">${pass}</div><div class="stl">Aprobados (≥5)</div></div>
     <div class="stat"><div class="stn" style="color:${avg>=5?'var(--ac)':avg>=3?'var(--ye)':'var(--re)'}">${avg.toFixed(2)}</div><div class="stl">Nota media</div></div>`;
 }
-function saveExDate(){Y().examDate=document.getElementById('exDate').value;save();updateExTxt()}
+function saveExDate(){const y=Y();if(y.finalized)return;y.examDate=document.getElementById('exDate').value;save();updateExTxt()}
 function updateExTxt(){
   const d=Y().examDate;
   document.getElementById('exTxt').textContent=d?
@@ -890,8 +913,34 @@ function updateExTxt(){
 }
 function renderAssess(){
   const y=Y();
-  document.getElementById('exDate').value=y.examDate||'';
+  const fin=!!y.finalized;
+
+  // Finalizar / Editar buttons
+  const finBtn=document.getElementById('finBtn');
+  const editBtn=document.getElementById('editBtn');
+  if(finBtn) finBtn.style.display=fin?'none':'inline-flex';
+  if(editBtn) editBtn.style.display=fin?'inline-flex':'none';
+
+  // Finalized banner
+  const banner=document.getElementById('finBanner');
+  if(banner){
+    if(fin){
+      banner.style.display='flex';
+      banner.innerHTML=`<div class="fin-banner">
+        <span class="fin-icon">🔒</span>
+        <span class="fin-txt">Prueba <strong>finalizada</strong>. Los resultados están bloqueados.</span>
+      </div>`;
+    }else{
+      banner.style.display='none';
+    }
+  }
+
+  // Date field lock
+  const exDateEl=document.getElementById('exDate');
+  exDateEl.value=y.examDate||'';
+  if(fin) exDateEl.classList.add('locked'); else exDateEl.classList.remove('locked');
   updateExTxt();refreshStats();
+
   const wrap=document.getElementById('assessWrap');
   if(!y.students.length||!y.knots.length){
     const msg=!y.students.length
@@ -905,14 +954,14 @@ function renderAssess(){
     h+=`<th class="kth"><div class="khi">
       <span class="kn">${x(k.name)}</span>
       ${k.time?`<span class="ktim">⏱${k.time}s</span>`:''}
-      <button class="mall" onclick="markAll(${k.id})">✓ Todos</button>
+      <button class="mall${fin?' locked':''}" onclick="markAll(${k.id})"${fin?' disabled':''}>✓ Todos</button>
     </div></th>`;
   });
   h+=`<th class="sth">Nota</th></tr></thead><tbody>`;
   y.students.forEach(s=>{
     h+=`<tr><td class="snm">${x(s)}</td>`;
     y.knots.forEach(k=>{
-      h+=`<td class="cct"><button id="c_${eid(s)}_${k.id}" class="ck${getR(s,k.id)?' yes':''}" onclick="toggle('${esc(s)}',${k.id})"></button></td>`;
+      h+=`<td class="cct"><button id="c_${eid(s)}_${k.id}" class="ck${getR(s,k.id)?' yes':''}${fin?' locked':''}" onclick="toggle('${esc(s)}',${k.id})"${fin?' disabled':''}></button></td>`;
     });
     h+=`<td class="sct" id="sc_${eid(s)}">${sBadge(calcScore(s))}</td></tr>`;
   });
@@ -964,6 +1013,59 @@ function exportCSV(){
   dl(new Blob([c],{type:'text/csv;charset=utf-8;'}),`nudosEF_${DB.currentYear}.csv`);
   toast('CSV exportado','ok');
 }
+function exportXLSX(){
+  const y=Y();if(!y.students.length)return toast('No hay datos','err');
+  // Build worksheet data array
+  const header=['Alumno',...y.knots.map(k=>k.name),'Nota'];
+  const rows=y.students.map(s=>[
+    s,
+    ...y.knots.map(k=>getR(s,k.id)?1:0),
+    parseFloat(calcScore(s).toFixed(2))
+  ]);
+  // Stats rows
+  const scores=y.students.map(s=>calcScore(s));
+  const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
+  const pass=scores.filter(v=>v>=5).length;
+  const wsData=[
+    header,
+    ...rows,
+    [],
+    ['ESTADÍSTICAS'],
+    ['Nota media',avg.toFixed(2)],
+    ['Aprobados (≥5)',pass],
+    ['Suspensos',scores.length-pass],
+    ['Nota máxima',Math.max(...scores).toFixed(2)],
+    ['Nota mínima',Math.min(...scores).toFixed(2)],
+  ];
+  if(y.examDate) wsData.unshift(['Fecha del examen',y.examDate],['Año',DB.currentYear],[]);
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  // Column widths
+  ws['!cols']=[{wch:28},...y.knots.map(()=>({wch:14})),{wch:10}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Evaluación');
+  XLSX.writeFile(wb,`nudosEF_${DB.currentYear}.xlsx`);
+  toast('Excel exportado','ok');
+}
+
+function finalizeExam(){
+  const y=Y();
+  if(!y.students.length)return toast('No hay alumnos en esta prueba','err');
+  if(!confirm('¿Finalizar la prueba? Los resultados quedarán bloqueados.\nPodrás desbloquearlos con el botón Editar.'))return;
+  y.finalized=true;
+  save();
+  renderAssess();
+  toast('Prueba finalizada y bloqueada 🔒','ok');
+}
+
+function unlockExam(){
+  const y=Y();
+  if(!confirm('¿Desbloquear la prueba para editar los resultados?'))return;
+  y.finalized=false;
+  save();
+  renderAssess();
+  toast('Prueba desbloqueada ✏️','inf');
+}
+
 function exportJSON(){
   dl(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),'nudosEF_backup.json');
   toast('JSON exportado','ok');
